@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">RxPhoto</string>
+    <string name="label_gallery">GALLERY</string>
+    <string name="label_camera">CAMERA</string>
+    <string name="label_thumb">THUMB</string>
+    <string name="label_combine">COMBINE</string>
+    <string name="label_combine_multiple">COMBINE MULTIPLE</string>
+
+    <string name="label_compress">COMPRESS</string>
+    <string name="label_transformations">TRANSFORM TO THUMBS</string>
+    <string name="label_document">DOCUMENT</string>
+</resources>
