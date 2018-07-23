@@ -4,7 +4,7 @@ apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.github.dcendents.android-maven'
 
 ext {
-    bintrayRepo = "CPHOTO"
+    bintrayRepo = "CPhoto"
     bintrayName = "com.geniusrus.cphoto"
     libraryName = "cphoto"
 
@@ -13,8 +13,8 @@ ext {
     libraryVersion = "1.0.0"
 
     libraryDescription = "Android take photo library on coroutines"
-    siteUrl = 'https://github.com/GeniusRUS/CGPS'
-    gitUrl = 'https://github.com/GeniusRUS/CGPS.git'
+    siteUrl = 'https://github.com/GeniusRUS/CPhoto'
+    gitUrl = 'https://github.com/GeniusRUS/CPhoto.git'
     developerId = 'GeniusRUS'
     developerName = 'Viktor Likhanov'
     developerEmail = 'Gen1usRUS@yandex.ru'

@@ -16,7 +16,7 @@ import com.genius.cphoto.exceptions.ExternalStorageWriteException
 import com.genius.cphoto.exceptions.NotPermissionException
 import com.genius.cphoto.shared.Constants
 import com.genius.cphoto.shared.TypeRequest
-import com.github.oliveiradev.lib.util.Utils
+import com.genius.cphoto.util.Utils
 import java.text.SimpleDateFormat
 import java.util.*
 

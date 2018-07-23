@@ -12,7 +12,7 @@ import com.genius.cphoto.shared.ResponseType
 import com.genius.cphoto.shared.ResponseType.*
 import com.genius.cphoto.shared.TypeRequest
 import com.genius.cphoto.util.FileUtils
-import com.github.oliveiradev.lib.util.Utils
+import com.genius.cphoto.util.Utils
 import kotlinx.coroutines.experimental.CompletableDeferred
 import java.io.IOException
 import java.lang.ref.WeakReference

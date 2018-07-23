@@ -1,4 +1,4 @@
-package com.github.oliveiradev.lib.util
+package com.genius.cphoto.util
 
 import android.content.Context
 import android.content.Intent
