@@ -340,7 +340,6 @@ class CRPhoto(context: Context) {
 
 /**
  * Get thumbnails bitmap for selected scale from source
- * @param bitmap - source bitmap for scale
  * @param resizeValues - pair values with requested size for bitmap
  * @return - scaled bitmap
  */
