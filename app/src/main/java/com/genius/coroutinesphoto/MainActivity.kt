@@ -10,10 +10,15 @@ import android.widget.Toast
 import com.genius.cphoto.CRPhoto
 import com.genius.cphoto.exceptions.CancelOperationException
 import com.genius.cphoto.shared.TypeRequest
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CoroutineScope {
+
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,7 +31,7 @@ class MainActivity : AppCompatActivity() {
             image.setImageBitmap(null)
             thumbsContent.removeAllViews()
 
-            launch(UI) {
+            launch {
                 try {
                     image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.GALLERY, 300, 300))
                 } catch (e: CancelOperationException) {
@@ -39,7 +44,7 @@ class MainActivity : AppCompatActivity() {
             image.setImageBitmap(null)
             thumbsContent.removeAllViews()
 
-            launch(UI) {
+            launch {
                 try {
                     image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.CAMERA))
                 } catch (e: CancelOperationException) {
@@ -52,7 +57,7 @@ class MainActivity : AppCompatActivity() {
             image.setImageBitmap(null)
             thumbsContent.removeAllViews()
 
-            launch(UI) {
+            launch {
                 try {
                     image.setImageBitmap(CRPhoto(v.context).titleCombine("Custom chooser title").requestBitmap(TypeRequest.COMBINE))
                 } catch (e: CancelOperationException) {
@@ -65,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             image.setImageBitmap(null)
             thumbsContent.removeAllViews()
 
-            launch(UI) {
+            launch {
                 try {
                     Toast.makeText(this@MainActivity, CRPhoto(v.context).requestMultiPath().toString(), Toast.LENGTH_LONG).show()
                 } catch (e: CancelOperationException) {
@@ -78,7 +83,7 @@ class MainActivity : AppCompatActivity() {
             image.setImageBitmap(null)
             thumbsContent.removeAllViews()
 
-            launch(UI) {
+            launch {
                 try {
                     image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.FROM_DOCUMENT))
                 } catch (e: CancelOperationException) {
