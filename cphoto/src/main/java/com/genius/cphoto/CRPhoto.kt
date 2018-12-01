@@ -1,5 +1,6 @@
 package com.genius.cphoto
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
@@ -21,6 +22,7 @@ import kotlin.collections.ArrayList
 /**
  * Created by Genius on 03.12.2017.
  */
+@Suppress("UNUSED")
 class CRPhoto(context: Context) {
 
     private var contextWeakReference: WeakReference<Context> = WeakReference(context)
@@ -187,6 +189,7 @@ class CRPhoto(context: Context) {
     private fun startOverlapActivity(typeRequest: TypeRequest) {
         val context = contextWeakReference.get() ?: return
         context.startActivity(OverlapActivity.newIntent(context, typeRequest, this))
+        (context as? Activity)?.overridePendingTransition(0, 0)
     }
 
     /**
@@ -304,8 +307,8 @@ class CRPhoto(context: Context) {
      * @param uris - uris of path image activity
      */
     private fun propagateMultiplePaths(uris: List<Uri>) {
-        pathMultiPublishSubject?.let {
-            it.complete(uris.map { FileUtils.getPath(contextWeakReference.get(), it) } )
+        pathMultiPublishSubject?.let { continuation ->
+            continuation.complete(uris.map { uri -> FileUtils.getPath(contextWeakReference.get(), uri) } )
         }
     }
 
@@ -316,7 +319,7 @@ class CRPhoto(context: Context) {
     private fun propagateBitmap(uriBitmap: Uri) {
         getBitmapFromStream(uriBitmap)?.let {
             bitmapPublishSubject?.complete(it)
-        } ?: bitmapMultiPublishSubject?.cancel(IllegalStateException("Bitmap is null"))
+        } ?: bitmapMultiPublishSubject?.completeExceptionally(IllegalStateException("Bitmap is null"))
 
     }
 
@@ -343,18 +346,20 @@ class CRPhoto(context: Context) {
  * @param resizeValues - pair values with requested size for bitmap
  * @return - scaled bitmap
  */
+@Suppress("UNUSED")
 infix fun Bitmap.toThumb(resizeValues: Pair<Int, Int>): Bitmap {
     return ThumbnailUtils.extractThumbnail(this, resizeValues.first, resizeValues.second)
 }
-
+@Suppress("UNUSED")
 suspend infix fun Context.takePhotoPath(typeRequest: TypeRequest): String {
     return CRPhoto(this).requestPath(typeRequest)
 }
-
+@Suppress("UNUSED")
 suspend infix fun Context.takePhotoBitmap(typeRequest: TypeRequest): Bitmap {
     return CRPhoto(this).requestBitmap(typeRequest)
 }
 
+@Suppress("DEPRECATION")
 @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
 suspend infix fun Context.takePhotoUri(typeRequest: TypeRequest): Uri {
     return CRPhoto(this).requestUri(typeRequest)

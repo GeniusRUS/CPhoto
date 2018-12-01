@@ -58,8 +58,8 @@ open class OverlapActivity: Activity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        typeRequest = intent.extras.get(Constants.REQUEST_TYPE_EXTRA) as TypeRequest
-        val bundle = intent.extras.getBundle(Constants.CALLER_EXTRA)
+        typeRequest = intent.extras?.get(Constants.REQUEST_TYPE_EXTRA) as TypeRequest
+        val bundle = intent.extras?.getBundle(Constants.CALLER_EXTRA)
         if (bundle != null) {
             val iBinder = BundleCompat.getBinder(bundle, Constants.CALLER_EXTRA)
             if (iBinder is Rx2PhotoBinder) {
@@ -168,8 +168,9 @@ open class OverlapActivity: Activity() {
      * If we not choose camera, temp file is unused and must be removed
      */
     private fun removeUnusedFile() {
-        if (fileUri != null)
-            contentResolver.delete(fileUri, null, null)
+        fileUri?.let {
+            contentResolver.delete(it, null, null)
+        }
     }
 
     private fun createImageUri(): Uri? {
@@ -208,8 +209,8 @@ open class OverlapActivity: Activity() {
         if (resultCode == Activity.RESULT_OK) {
             when (typeRequest) {
                 TypeRequest.COMBINE_MULTIPLE -> if (data != null && data.clipData != null) {
-                    val mClipData = data.clipData
-                    val uris = (0 until mClipData.itemCount).map { mClipData.getItemAt(it).uri }
+                    val clipData = data.clipData
+                    val uris = (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
 
                     crPhoto.onActivityResult(uris)
 
