@@ -47,6 +47,7 @@ open class OverlapActivity: Activity() {
     private lateinit var crPhoto: CRPhoto
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        overridePendingTransition(0, 0)
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
             handleIntent(intent)
@@ -55,6 +56,11 @@ open class OverlapActivity: Activity() {
 
     override fun onNewIntent(intent: Intent) {
         handleIntent(intent)
+    }
+
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(0, 0)
     }
 
     private fun handleIntent(intent: Intent) {
