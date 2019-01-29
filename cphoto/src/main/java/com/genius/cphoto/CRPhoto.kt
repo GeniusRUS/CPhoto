@@ -12,8 +12,8 @@ import com.genius.cphoto.shared.Constants
 import com.genius.cphoto.shared.ResponseType
 import com.genius.cphoto.shared.ResponseType.*
 import com.genius.cphoto.shared.TypeRequest
-import com.genius.cphoto.util.FileUtils
-import com.genius.cphoto.util.Utils
+import com.genius.cphoto.util.CRFileUtils
+import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
 import java.lang.ref.WeakReference
@@ -200,7 +200,7 @@ class CRPhoto(context: Context) {
     @Throws(IOException::class)
     private fun getBitmapFromStream(uri: Uri): Bitmap? {
         val context = contextWeakReference.get() ?: return null
-        return Utils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
+        return CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
     }
 
     /**
@@ -291,7 +291,7 @@ class CRPhoto(context: Context) {
      * @param uri - uri item from activity
      */
     private fun propagatePath(uri: Uri) {
-        pathPublishSubject?.complete(FileUtils.getPath(contextWeakReference.get(), uri))
+        pathPublishSubject?.complete(CRFileUtils.getPath(contextWeakReference.get(), uri))
     }
 
     /**
@@ -308,7 +308,7 @@ class CRPhoto(context: Context) {
      */
     private fun propagateMultiplePaths(uris: List<Uri>) {
         pathMultiPublishSubject?.let { continuation ->
-            continuation.complete(uris.map { uri -> FileUtils.getPath(contextWeakReference.get(), uri) } )
+            continuation.complete(uris.map { uri -> CRFileUtils.getPath(contextWeakReference.get(), uri) } )
         }
     }
 

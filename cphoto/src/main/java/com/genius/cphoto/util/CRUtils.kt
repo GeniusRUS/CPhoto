@@ -14,7 +14,7 @@ import java.io.IOException
 /**
  * Created by Genius on 03.12.2017.
  */
-class Utils {
+class CRUtils {
 
     companion object {
 
@@ -75,7 +75,7 @@ class Utils {
         fun getBitmap(context: Context, uri: Uri, width: Int?, height: Int?): Bitmap {
             var path: String?
             path = try {
-                FileUtils.getPath(context, uri) //from Gallery
+                CRFileUtils.getPath(context, uri) //from Gallery
             } catch (e: Exception) {
                 null
             }

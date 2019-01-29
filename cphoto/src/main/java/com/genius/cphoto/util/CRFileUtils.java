@@ -21,8 +21,8 @@ import java.io.File;
  * @author paulburke (ipaulpro)
  * @version 2013-12-11
  */
-public class FileUtils {
-    private FileUtils() {
+public class CRFileUtils {
+    private CRFileUtils() {
     } //private constructor to enforce Singleton pattern
 
     /**

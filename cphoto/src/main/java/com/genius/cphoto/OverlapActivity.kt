@@ -16,14 +16,14 @@ import com.genius.cphoto.exceptions.ExternalStorageWriteException
 import com.genius.cphoto.exceptions.NotPermissionException
 import com.genius.cphoto.shared.Constants
 import com.genius.cphoto.shared.TypeRequest
-import com.genius.cphoto.util.Utils
+import com.genius.cphoto.util.CRUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
  * Created by Genius on 03.12.2017.
  */
-open class OverlapActivity: Activity() {
+class OverlapActivity: Activity() {
 
     companion object {
         private const val FILE_URI_EXTRA = "FILE_URI"
@@ -96,7 +96,7 @@ open class OverlapActivity: Activity() {
     }
 
     private fun combine(isMultiple: Boolean) {
-        if (!Utils.isExternalStorageWritable()) {
+        if (!CRUtils.isExternalStorageWritable()) {
             crPhoto.propagateThrowable(ExternalStorageWriteException())
             return
         }
@@ -108,10 +108,10 @@ open class OverlapActivity: Activity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, isMultiple)
         }
-        intentList = Utils.addIntentsToList(this, intentList, pickIntent)
+        intentList = CRUtils.addIntentsToList(this, intentList, pickIntent)
         val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
-        intentList = Utils.addIntentsToList(this, intentList, takePhotoIntent)
+        intentList = CRUtils.addIntentsToList(this, intentList, takePhotoIntent)
         if (!intentList.isEmpty()) {
             val title = if (crPhoto.title != null) crPhoto.title else getString(R.string.picker_header)
             chooserIntent = Intent.createChooser(intentList.removeAt(intentList.size - 1), title)
@@ -132,7 +132,7 @@ open class OverlapActivity: Activity() {
     private fun camera() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         if (takePictureIntent.resolveActivity(packageManager) != null) {
-            if (!Utils.isExternalStorageWritable()) {
+            if (!CRUtils.isExternalStorageWritable()) {
                 crPhoto.propagateThrowable(ExternalStorageWriteException())
                 return
             }
