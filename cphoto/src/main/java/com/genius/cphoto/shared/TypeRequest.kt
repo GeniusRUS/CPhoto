@@ -1,7 +1,7 @@
 package com.genius.cphoto.shared
 
 import android.os.Build
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 
 /**
  * Created by Genius on 03.12.2017.

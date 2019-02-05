@@ -1,12 +1,12 @@
 package com.genius.cphoto
 
-import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
 import android.net.Uri
-import android.support.annotation.StringRes
+import androidx.annotation.StringRes
 import android.util.Pair
+import androidx.fragment.app.FragmentActivity
 import com.genius.cphoto.exceptions.CancelOperationException
 import com.genius.cphoto.shared.Constants
 import com.genius.cphoto.shared.ResponseType
@@ -183,13 +183,18 @@ class CRPhoto(context: Context) {
 
     /**
      * Start activity for action
-     * Calling {@link OverlapActivity#newIntent} with selected type request and Rx2Photo instance
+     * Calling {@link OverlapActivity#newInstance} with selected type request and CRPhoto instance
      * @param typeRequest - selected request
      */
     private fun startOverlapActivity(typeRequest: TypeRequest) {
         val context = contextWeakReference.get() ?: return
-        context.startActivity(OverlapActivity.newIntent(context, typeRequest, this))
-        (context as? Activity)?.overridePendingTransition(0, 0)
+        (context as? FragmentActivity)?.let {  activity ->
+            activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
+                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, this)
+            } ?: activity.supportFragmentManager.beginTransaction()
+                .add(OverlapFragment.newInstance(typeRequest, this), OverlapFragment.TAG)
+                .commit()
+        } ?: propagateThrowable(ClassCastException("Attached context is not FragmentActivity"))
     }
 
     /**
@@ -222,7 +227,7 @@ class CRPhoto(context: Context) {
     }
 
     /**
-     * Handle throwable from activity
+     * Handle throwable from fragment
      * @param error - throwable
      */
     internal fun propagateThrowable(error: Throwable) {
@@ -243,7 +248,7 @@ class CRPhoto(context: Context) {
     }
 
     /**
-     * Handle result from activity
+     * Handle result from fragment
      * @param uri - uri-result
      */
     private fun propagateResult(uri: Uri) {
@@ -261,8 +266,8 @@ class CRPhoto(context: Context) {
     }
 
     /**
-     * Handle multiple result from activity
-     * @param uris - uris items from activity
+     * Handle multiple result from fragment
+     * @param uris - uris items from fragment
      */
     private fun propagateMultipleResult(uris: List<Uri>) {
         try {
@@ -279,32 +284,32 @@ class CRPhoto(context: Context) {
     }
 
     /**
-     * Handle single result from activity
-     * @param uri - uri item from activity
+     * Handle single result from fragment
+     * @param uri - uri item from fragment
      */
     private fun propagateUri(uri: Uri) {
         uriPublishSubject?.complete(uri)
     }
 
     /**
-     * Handle single result from activity
-     * @param uri - uri item from activity
+     * Handle single result from fragment
+     * @param uri - uri item from fragment
      */
     private fun propagatePath(uri: Uri) {
         pathPublishSubject?.complete(CRFileUtils.getPath(contextWeakReference.get(), uri))
     }
 
     /**
-     * Handle multiple result from activity
-     * @param uris - uris items from activity
+     * Handle multiple result from fragment
+     * @param uris - uris items from fragment
      */
     private fun propagateMultipleUri(uris: List<Uri>) {
         uriMultiPublishSubject?.complete(uris)
     }
 
     /**
-     * Handle result list of paths from activity
-     * @param uris - uris of path image activity
+     * Handle result list of paths from fragment
+     * @param uris - uris of path image fragment
      */
     private fun propagateMultiplePaths(uris: List<Uri>) {
         pathMultiPublishSubject?.let { continuation ->
@@ -313,8 +318,8 @@ class CRPhoto(context: Context) {
     }
 
     /**
-     * Handle single result bitmap from activity
-     * @param uriBitmap - uri for bitmap image activity
+     * Handle single result bitmap from fragment
+     * @param uriBitmap - uri for bitmap image fragment
      */
     private fun propagateBitmap(uriBitmap: Uri) {
         getBitmapFromStream(uriBitmap)?.let {
@@ -324,8 +329,8 @@ class CRPhoto(context: Context) {
     }
 
     /**
-     * Handle result list of bitmaps from activity
-     * @param uris - uris of bitmap image activity
+     * Handle result list of bitmaps from fragment
+     * @param uris - uris of bitmap image fragment
      */
     private fun propagateMultipleBitmap(uris: List<Uri>) {
         val list = ArrayList<Bitmap>()
