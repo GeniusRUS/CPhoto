@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
-import androidx.core.app.BundleCompat
 import androidx.fragment.app.Fragment
 import com.genius.cphoto.exceptions.CancelOperationException
 import com.genius.cphoto.exceptions.ExternalStorageWriteException
@@ -106,9 +105,9 @@ class OverlapFragment: Fragment() {
     fun newRequest(typeRequest: TypeRequest, caller: CRPhoto) {
         val bundle = Bundle().apply {
             putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
-            BundleCompat.putBinder(this, Constants.CALLER_EXTRA, Rx2PhotoBinder(caller))
         }
         this.arguments = bundle
+        this.crPhoto = caller
 
         handleIntent()
     }
@@ -116,13 +115,6 @@ class OverlapFragment: Fragment() {
     private fun handleIntent() {
         arguments?.let { bundle ->
             typeRequest = bundle.get(Constants.REQUEST_TYPE_EXTRA) as TypeRequest
-            val isContainsBinder = bundle.containsKey(Constants.CALLER_EXTRA)
-            if (isContainsBinder) {
-                val iBinder = BundleCompat.getBinder(bundle, Constants.CALLER_EXTRA)
-                if (iBinder is Rx2PhotoBinder) {
-                    crPhoto = iBinder.rx2Photo
-                }
-            }
         } ?: return
 
         if (hasPermission()) {
@@ -221,8 +213,6 @@ class OverlapFragment: Fragment() {
         return contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
     }
 
-    private class Rx2PhotoBinder constructor(internal val rx2Photo: CRPhoto) : Binder()
-
     companion object {
         internal const val TAG = "OverlapFragment"
         private const val REQUEST_GALLERY = 141
@@ -230,11 +220,11 @@ class OverlapFragment: Fragment() {
         fun newInstance(typeRequest: TypeRequest, caller: CRPhoto): OverlapFragment {
             val bundle = Bundle().apply {
                 putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
-                BundleCompat.putBinder(this, Constants.CALLER_EXTRA, Rx2PhotoBinder(caller))
             }
 
             return OverlapFragment().apply {
                 arguments = bundle
+                crPhoto = caller
             }
         }
     }
