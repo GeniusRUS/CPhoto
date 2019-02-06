@@ -37,7 +37,7 @@ class OverlapFragment: Fragment() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == REQUEST_GALLERY && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+        if (requestCode == REQUEST_STORAGE_CODE && PackageManager.PERMISSION_DENIED == grantResults.getOrNull(0)) {
             crPhoto.propagateThrowable(NotPermissionException(typeRequest))
             return
         }
@@ -192,7 +192,7 @@ class OverlapFragment: Fragment() {
 
     private fun requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_GALLERY)
+            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_STORAGE_CODE)
         }
     }
 
@@ -215,7 +215,7 @@ class OverlapFragment: Fragment() {
 
     companion object {
         internal const val TAG = "OverlapFragment"
-        private const val REQUEST_GALLERY = 141
+        private const val REQUEST_STORAGE_CODE = 141
 
         fun newInstance(typeRequest: TypeRequest, caller: CRPhoto): OverlapFragment {
             val bundle = Bundle().apply {
