@@ -16,16 +16,14 @@ import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
-import java.lang.ref.WeakReference
 import kotlin.collections.ArrayList
 
 /**
  * Created by Genius on 03.12.2017.
  */
 @Suppress("UNUSED")
-class CRPhoto(context: Context) {
+class CRPhoto(private val context: Context) {
 
-    private var contextWeakReference: WeakReference<Context> = WeakReference(context)
     private var bitmapSizes: Pair<Int, Int>? = null
     private var bitmapPublishSubject: CompletableDeferred<Bitmap>? = null
     private var uriPublishSubject: CompletableDeferred<Uri>? = null
@@ -89,7 +87,7 @@ class CRPhoto(context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestBitmap(typeRequest: TypeRequest, bitmapSize: Pair<Int, Int>): Bitmap {
         response = BITMAP
-        startOverlapActivity(typeRequest)
+        startOverlapFragment(typeRequest)
         this.bitmapSizes = bitmapSize
         bitmapPublishSubject = CompletableDeferred()
         return (bitmapPublishSubject as CompletableDeferred<Bitmap>).await()
@@ -104,7 +102,7 @@ class CRPhoto(context: Context) {
     @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
     suspend fun requestUri(typeRequest: TypeRequest): Uri {
         response = URI
-        startOverlapActivity(typeRequest)
+        startOverlapFragment(typeRequest)
         uriPublishSubject = CompletableDeferred()
         return (uriPublishSubject as CompletableDeferred<Uri>).await()
     }
@@ -117,7 +115,7 @@ class CRPhoto(context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestPath(typeRequest: TypeRequest): String {
         response = PATH
-        startOverlapActivity(typeRequest)
+        startOverlapFragment(typeRequest)
         pathPublishSubject = CompletableDeferred()
         return (pathPublishSubject as CompletableDeferred<String>).await()
     }
@@ -130,7 +128,7 @@ class CRPhoto(context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestMultiBitmap(bitmapSize: Pair<Int, Int>): List<Bitmap> {
         response = BITMAP
-        startOverlapActivity(TypeRequest.COMBINE_MULTIPLE)
+        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
         this.bitmapSizes = bitmapSize
         bitmapMultiPublishSubject = CompletableDeferred()
         return (bitmapMultiPublishSubject as CompletableDeferred<List<Bitmap>>).await()
@@ -144,7 +142,7 @@ class CRPhoto(context: Context) {
     @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
     suspend fun requestMultiUri(): List<Uri> {
         response = URI
-        startOverlapActivity(TypeRequest.COMBINE_MULTIPLE)
+        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
         uriMultiPublishSubject = CompletableDeferred()
         return (uriMultiPublishSubject as CompletableDeferred<List<Uri>>).await()
     }
@@ -156,7 +154,7 @@ class CRPhoto(context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestMultiPath(): List<String> {
         response = PATH
-        startOverlapActivity(TypeRequest.COMBINE_MULTIPLE)
+        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
         pathMultiPublishSubject = CompletableDeferred()
         return (pathMultiPublishSubject as CompletableDeferred<List<String>>).await()
     }
@@ -177,17 +175,16 @@ class CRPhoto(context: Context) {
      * @return - parent class
      */
     fun titleCombine(@StringRes titleId: Int): CRPhoto {
-        this.title = contextWeakReference.get()?.getString(titleId)
+        this.title = context.getString(titleId)
         return this
     }
 
     /**
-     * Start activity for action
-     * Calling {@link OverlapActivity#newInstance} with selected type request and CRPhoto instance
+     * Start fragment for action
+     * Calling [OverlapFragment.newInstance] with selected type request and CRPhoto instance
      * @param typeRequest - selected request
      */
-    private fun startOverlapActivity(typeRequest: TypeRequest) {
-        val context = contextWeakReference.get() ?: return
+    private fun startOverlapFragment(typeRequest: TypeRequest) {
         (context as? FragmentActivity)?.let {  activity ->
             activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
                 (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, this)
@@ -204,7 +201,6 @@ class CRPhoto(context: Context) {
      */
     @Throws(IOException::class)
     private fun getBitmapFromStream(uri: Uri): Bitmap? {
-        val context = contextWeakReference.get() ?: return null
         return CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
     }
 
@@ -296,7 +292,7 @@ class CRPhoto(context: Context) {
      * @param uri - uri item from fragment
      */
     private fun propagatePath(uri: Uri) {
-        pathPublishSubject?.complete(CRFileUtils.getPath(contextWeakReference.get(), uri))
+        pathPublishSubject?.complete(CRFileUtils.getPath(context, uri))
     }
 
     /**
@@ -313,7 +309,7 @@ class CRPhoto(context: Context) {
      */
     private fun propagateMultiplePaths(uris: List<Uri>) {
         pathMultiPublishSubject?.let { continuation ->
-            continuation.complete(uris.map { uri -> CRFileUtils.getPath(contextWeakReference.get(), uri) } )
+            continuation.complete(uris.map { uri -> CRFileUtils.getPath(context, uri) } )
         }
     }
 
