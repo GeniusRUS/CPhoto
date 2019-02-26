@@ -27,7 +27,7 @@ class OverlapFragment : Fragment() {
 
     private var fileUri: Uri? = null
     private lateinit var typeRequest: TypeRequest
-    private lateinit var crPhoto: CRPhoto
+    private var crPhoto: CRPhoto? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +39,7 @@ class OverlapFragment : Fragment() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == REQUEST_STORAGE_CODE && PackageManager.PERMISSION_DENIED == grantResults.getOrNull(0)) {
-            crPhoto.propagateThrowable(NotPermissionException(typeRequest))
+            crPhoto?.propagateThrowable(NotPermissionException(typeRequest))
             return
         }
 
@@ -62,7 +62,7 @@ class OverlapFragment : Fragment() {
                     data.clipData?.let { clipData ->
                         val uris = (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
 
-                        crPhoto.onActivityResult(uris)
+                        crPhoto?.onActivityResult(uris)
                     }
 
                     removeUnusedFile()
@@ -70,31 +70,31 @@ class OverlapFragment : Fragment() {
                     data.data?.let { uri ->
                         val uris = ArrayList<Uri>()
                         uris.add(uri)
-                        crPhoto.onActivityResult(uris)
+                        crPhoto?.onActivityResult(uris)
                     }
 
                     removeUnusedFile()
                 } else if (fileUri != null) {
                     fileUri?.let { uri ->
                         val uris = listOf(uri)
-                        crPhoto.onActivityResult(uris)
+                        crPhoto?.onActivityResult(uris)
                     }
                 } else {
-                    crPhoto.onActivityResult(fileUri)
+                    crPhoto?.onActivityResult(fileUri)
                 }
-                TypeRequest.CAMERA -> crPhoto.onActivityResult(fileUri)
+                TypeRequest.CAMERA -> crPhoto?.onActivityResult(fileUri)
                 TypeRequest.GALLERY, TypeRequest.COMBINE -> if (data != null && data.data != null) {
-                    crPhoto.onActivityResult(data.data)
+                    crPhoto?.onActivityResult(data.data)
                     removeUnusedFile()
                 } else {
-                    crPhoto.onActivityResult(fileUri)
+                    crPhoto?.onActivityResult(fileUri)
                 }
                 TypeRequest.FROM_DOCUMENT -> if (data != null && data.data != null) {
-                    crPhoto.onActivityResult(data.data)
+                    crPhoto?.onActivityResult(data.data)
                 }
             }
         } else {
-            crPhoto.propagateThrowable(CancelOperationException(typeRequest))
+            crPhoto?.propagateThrowable(CancelOperationException(typeRequest))
             removeUnusedFile()
         }
     }
@@ -144,7 +144,7 @@ class OverlapFragment : Fragment() {
 
     private fun combine(isMultiple: Boolean) {
         if (!CRUtils.isExternalStorageWritable()) {
-            crPhoto.propagateThrowable(ExternalStorageWriteException())
+            crPhoto?.propagateThrowable(ExternalStorageWriteException())
             return
         }
 
@@ -160,7 +160,7 @@ class OverlapFragment : Fragment() {
         takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, takePhotoIntent)
         if (!intentList.isEmpty()) {
-            val title = if (crPhoto.title != null) crPhoto.title else getString(R.string.picker_header)
+            val title = crPhoto?.title ?: getString(R.string.picker_header)
             chooserIntent = Intent.createChooser(intentList.removeAt(intentList.size - 1), title)
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray<Parcelable>())
         }
@@ -180,7 +180,7 @@ class OverlapFragment : Fragment() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             if (!CRUtils.isExternalStorageWritable()) {
-                crPhoto.propagateThrowable(ExternalStorageWriteException())
+                crPhoto?.propagateThrowable(ExternalStorageWriteException())
                 return
             }
             fileUri = createImageUri()
