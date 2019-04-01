@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
-import androidx.core.app.BundleCompat
 import androidx.fragment.app.Fragment
 import com.genius.cphoto.exceptions.CancelOperationException
 import com.genius.cphoto.exceptions.ExternalStorageWriteException
@@ -29,9 +28,12 @@ class OverlapFragment : Fragment() {
     private lateinit var typeRequest: TypeRequest
     private var crPhoto: CRPhoto? = null
 
+    init {
+        retainInstance = true
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        retainInstance = true
         handleIntent()
     }
 
@@ -106,18 +108,16 @@ class OverlapFragment : Fragment() {
     fun newRequest(typeRequest: TypeRequest, caller: CRPhoto) {
         val bundle = Bundle().apply {
             putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
-            BundleCompat.putBinder(this, Constants.CALLER_EXTRA, CRPhotoBinder(caller))
         }
         this.arguments = bundle
 
         handleIntent()
+        this.crPhoto = caller
     }
 
     private fun handleIntent() {
         arguments?.let { bundle ->
             typeRequest = bundle.get(Constants.REQUEST_TYPE_EXTRA) as TypeRequest
-            crPhoto = (BundleCompat.getBinder(bundle, Constants.CALLER_EXTRA) as? CRPhotoBinder)?.crPhoto
-                ?: return@let
         } ?: return
 
         if (hasPermission()) {
@@ -216,20 +216,17 @@ class OverlapFragment : Fragment() {
         return contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
     }
 
-    class CRPhotoBinder(val crPhoto: CRPhoto) : Binder()
-
     companion object {
         internal const val TAG = "OverlapFragment"
         private const val REQUEST_STORAGE_CODE = 141
 
         fun newInstance(typeRequest: TypeRequest, caller: CRPhoto): OverlapFragment {
-            val bundle = Bundle().apply {
-                putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
-                BundleCompat.putBinder(this, Constants.CALLER_EXTRA, CRPhotoBinder(caller))
-            }
-
             return OverlapFragment().apply {
-                arguments = bundle
+                val bundle = Bundle().apply {
+                    putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
+                }
+                this.arguments = bundle
+                this.crPhoto = caller
             }
         }
     }

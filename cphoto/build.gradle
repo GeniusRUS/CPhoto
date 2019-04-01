@@ -10,7 +10,7 @@ ext {
 
     publishedGroupId = "com.geniusrus.cphoto"
     artifact = "cphoto"
-    libraryVersion = "2.0.5"
+    libraryVersion = "2.0.6"
 
     libraryDescription = "Android take photo library on coroutines"
     siteUrl = 'https://github.com/GeniusRUS/CPhoto'
