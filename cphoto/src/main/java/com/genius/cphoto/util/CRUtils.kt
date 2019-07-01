@@ -5,9 +5,9 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
+import androidx.exifinterface.media.ExifInterface
 import com.genius.cphoto.CRPhoto.Companion.IMAGE_SIZE
 import java.io.IOException
 
@@ -20,10 +20,9 @@ class CRUtils {
 
         @Throws(IOException::class)
         private fun modifyOrientation(bitmap: Bitmap, image_absolute_path: String?): Bitmap {
-            val ei = ExifInterface(image_absolute_path)
-            val orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            val ei = ExifInterface(image_absolute_path ?: throw IllegalStateException("Image path is null"))
 
-            return when (orientation) {
+            return when (ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
                 ExifInterface.ORIENTATION_ROTATE_90 -> rotate(bitmap, 90f)
                 ExifInterface.ORIENTATION_ROTATE_180 -> rotate(bitmap, 180f)
                 ExifInterface.ORIENTATION_ROTATE_270 -> rotate(bitmap, 270f)

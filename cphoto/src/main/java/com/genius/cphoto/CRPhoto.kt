@@ -14,7 +14,6 @@ import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
-import kotlin.collections.ArrayList
 
 /**
  * Created by Genius on 03.12.2017.
@@ -23,12 +22,7 @@ import kotlin.collections.ArrayList
 class CRPhoto(private val context: Context) {
 
     private var bitmapSizes: Pair<Int, Int>? = null
-    private var bitmapPublishSubject: CompletableDeferred<Bitmap>? = null
-    private var uriPublishSubject: CompletableDeferred<Uri>? = null
-    private var pathPublishSubject: CompletableDeferred<String>? = null
-    private var bitmapMultiPublishSubject: CompletableDeferred<List<Bitmap>>? = null
-    private var uriMultiPublishSubject: CompletableDeferred<List<Uri>>? = null
-    private var pathMultiPublishSubject: CompletableDeferred<List<String>>? = null
+    private var publishSubject: CompletableDeferred<*>? = null
     private lateinit var response: String
 
     var title: String? = null
@@ -87,8 +81,9 @@ class CRPhoto(private val context: Context) {
         response = BITMAP
         startOverlapFragment(typeRequest)
         this.bitmapSizes = bitmapSize
-        bitmapPublishSubject = CompletableDeferred()
-        return (bitmapPublishSubject as CompletableDeferred<Bitmap>).await()
+        return CompletableDeferred<Bitmap>().apply {
+            publishSubject = this
+        }.await()
     }
 
     /**
@@ -101,8 +96,9 @@ class CRPhoto(private val context: Context) {
     suspend fun requestUri(@TypeRequest typeRequest: String): Uri {
         response = URI
         startOverlapFragment(typeRequest)
-        uriPublishSubject = CompletableDeferred()
-        return (uriPublishSubject as CompletableDeferred<Uri>).await()
+        return CompletableDeferred<Uri>().apply {
+            publishSubject = this
+        }.await()
     }
 
     /**
@@ -114,8 +110,9 @@ class CRPhoto(private val context: Context) {
     suspend fun requestPath(@TypeRequest typeRequest: String): String {
         response = PATH
         startOverlapFragment(typeRequest)
-        pathPublishSubject = CompletableDeferred()
-        return (pathPublishSubject as CompletableDeferred<String>).await()
+        return CompletableDeferred<String>().apply {
+            publishSubject = this
+        }.await()
     }
 
     /**
@@ -128,8 +125,9 @@ class CRPhoto(private val context: Context) {
         response = BITMAP
         startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
         this.bitmapSizes = bitmapSize
-        bitmapMultiPublishSubject = CompletableDeferred()
-        return (bitmapMultiPublishSubject as CompletableDeferred<List<Bitmap>>).await()
+        return CompletableDeferred<List<Bitmap>>().apply {
+            publishSubject = this
+        }.await()
     }
 
     /**
@@ -141,8 +139,9 @@ class CRPhoto(private val context: Context) {
     suspend fun requestMultiUri(): List<Uri> {
         response = URI
         startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
-        uriMultiPublishSubject = CompletableDeferred()
-        return (uriMultiPublishSubject as CompletableDeferred<List<Uri>>).await()
+        return CompletableDeferred<List<Uri>>().apply {
+            publishSubject = this
+        }.await()
     }
 
     /**
@@ -153,8 +152,9 @@ class CRPhoto(private val context: Context) {
     suspend fun requestMultiPath(): List<String> {
         response = PATH
         startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
-        pathMultiPublishSubject = CompletableDeferred()
-        return (pathMultiPublishSubject as CompletableDeferred<List<String>>).await()
+        return CompletableDeferred<List<String>>().apply {
+            publishSubject = this
+        }.await()
     }
 
     /**
@@ -225,20 +225,7 @@ class CRPhoto(private val context: Context) {
      * @param error - throwable
      */
     internal fun propagateThrowable(error: Throwable) {
-        when (response) {
-            BITMAP -> {
-                bitmapMultiPublishSubject?.completeExceptionally(error)
-                bitmapPublishSubject?.completeExceptionally(error)
-            }
-            URI -> {
-                uriMultiPublishSubject?.completeExceptionally(error)
-                uriPublishSubject?.completeExceptionally(error)
-            }
-            PATH -> {
-                pathMultiPublishSubject?.completeExceptionally(error)
-                pathPublishSubject?.completeExceptionally(error)
-            }
-        }
+        publishSubject?.completeExceptionally(error)
     }
 
     /**
@@ -253,9 +240,7 @@ class CRPhoto(private val context: Context) {
                 PATH -> propagatePath(uri)
             }
         } catch (e: Exception) {
-            uriPublishSubject?.completeExceptionally(e)
-            bitmapPublishSubject?.completeExceptionally(e)
-            pathPublishSubject?.completeExceptionally(e)
+            publishSubject?.completeExceptionally(e)
         }
     }
 
@@ -271,9 +256,7 @@ class CRPhoto(private val context: Context) {
                 PATH -> propagateMultiplePaths(uris)
             }
         } catch (e: Exception) {
-            uriPublishSubject?.completeExceptionally(e)
-            bitmapPublishSubject?.completeExceptionally(e)
-            pathPublishSubject?.completeExceptionally(e)
+            publishSubject?.completeExceptionally(e)
         }
     }
 
@@ -281,32 +264,36 @@ class CRPhoto(private val context: Context) {
      * Handle single result from fragment
      * @param uri - uri item from fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateUri(uri: Uri) {
-        uriPublishSubject?.complete(uri)
+        (publishSubject as? CompletableDeferred<Uri>)?.complete(uri)
     }
 
     /**
      * Handle single result from fragment
      * @param uri - uri item from fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagatePath(uri: Uri) {
-        pathPublishSubject?.complete(CRFileUtils.getPath(context, uri))
+        (publishSubject as? CompletableDeferred<String>)?.complete(CRFileUtils.getPath(context, uri))
     }
 
     /**
      * Handle multiple result from fragment
      * @param uris - uris items from fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateMultipleUri(uris: List<Uri>) {
-        uriMultiPublishSubject?.complete(uris)
+        (publishSubject as? CompletableDeferred<List<Uri>>)?.complete(uris)
     }
 
     /**
      * Handle result list of paths from fragment
      * @param uris - uris of path image fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateMultiplePaths(uris: List<Uri>) {
-        pathMultiPublishSubject?.let { continuation ->
+        (publishSubject as? CompletableDeferred<List<String>>)?.let { continuation ->
             continuation.complete(uris.map { uri -> CRFileUtils.getPath(context, uri) } )
         }
     }
@@ -315,10 +302,11 @@ class CRPhoto(private val context: Context) {
      * Handle single result bitmap from fragment
      * @param uriBitmap - uri for bitmap image fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateBitmap(uriBitmap: Uri) {
         getBitmapFromStream(uriBitmap)?.let {
-            bitmapPublishSubject?.complete(it)
-        } ?: bitmapMultiPublishSubject?.completeExceptionally(IllegalStateException("Bitmap is null"))
+            (publishSubject as? CompletableDeferred<Bitmap>)?.complete(it)
+        } ?: publishSubject?.completeExceptionally(IllegalStateException("Bitmap is null"))
 
     }
 
@@ -326,17 +314,10 @@ class CRPhoto(private val context: Context) {
      * Handle result list of bitmaps from fragment
      * @param uris - uris of bitmap image fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateMultipleBitmap(uris: List<Uri>) {
-        val list = ArrayList<Bitmap>()
-
-        for (item in uris) {
-            val tmp = getBitmapFromStream(item)
-            if (tmp != null) {
-                list.add(tmp)
-            }
-        }
-
-        bitmapMultiPublishSubject?.complete(list)
+        val images = uris.mapNotNull { item -> getBitmapFromStream(item) }
+        (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(images)
     }
 
     @StringDef(BITMAP, URI, PATH)
@@ -377,7 +358,7 @@ suspend infix fun Context.takePhotoBitmap(@TypeRequest typeRequest: String): Bit
 }
 
 @Suppress("DEPRECATION")
-@Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
+@Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made", replaceWith = ReplaceWith("CRPhoto(this).requestPath(typeRequest)", "com.genius.cphoto.CRPhoto"))
 suspend infix fun Context.takePhotoUri(@TypeRequest typeRequest: String): Uri {
     return CRPhoto(this).requestUri(typeRequest)
 }

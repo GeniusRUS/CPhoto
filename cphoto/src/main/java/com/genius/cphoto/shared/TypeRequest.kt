@@ -1,5 +1,6 @@
 package com.genius.cphoto.shared
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringDef
@@ -7,6 +8,8 @@ import androidx.annotation.StringDef
 /**
  * Created by Genius on 03.12.2017.
  */
+
+@SuppressLint("NewApi")
 @StringDef(
     TypeRequest.CAMERA,
     TypeRequest.GALLERY,
