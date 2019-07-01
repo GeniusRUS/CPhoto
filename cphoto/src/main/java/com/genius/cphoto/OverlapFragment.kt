@@ -13,7 +13,6 @@ import androidx.fragment.app.Fragment
 import com.genius.cphoto.exceptions.CancelOperationException
 import com.genius.cphoto.exceptions.ExternalStorageWriteException
 import com.genius.cphoto.exceptions.NotPermissionException
-import com.genius.cphoto.shared.Constants
 import com.genius.cphoto.shared.TypeRequest
 import com.genius.cphoto.util.CRUtils
 import java.text.SimpleDateFormat
@@ -25,7 +24,7 @@ import java.util.*
 class OverlapFragment : Fragment() {
 
     private var fileUri: Uri? = null
-    private lateinit var typeRequest: TypeRequest
+    private lateinit var typeRequest: String
     private var crPhoto: CRPhoto? = null
 
     init {
@@ -45,6 +44,7 @@ class OverlapFragment : Fragment() {
             return
         }
 
+        @SuppressLint("NewApi")
         when (typeRequest) {
             TypeRequest.CAMERA -> camera()
             TypeRequest.GALLERY -> gallery()
@@ -105,9 +105,9 @@ class OverlapFragment : Fragment() {
      * Обрабатывает новый запрос на картинку
      * В процессе задает с помощью [setArguments] новый тип реквеста [typeRequest]
      */
-    fun newRequest(typeRequest: TypeRequest, caller: CRPhoto) {
+    fun newRequest(@TypeRequest typeRequest: String, caller: CRPhoto) {
         val bundle = Bundle().apply {
-            putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
+            putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
         }
         this.arguments = bundle
 
@@ -116,11 +116,10 @@ class OverlapFragment : Fragment() {
     }
 
     private fun handleIntent() {
-        arguments?.let { bundle ->
-            typeRequest = bundle.get(Constants.REQUEST_TYPE_EXTRA) as TypeRequest
-        } ?: return
+        typeRequest = arguments?.getString(CRPhoto.REQUEST_TYPE_EXTRA) ?: return
 
         if (hasPermission()) {
+            @SuppressLint("NewApi")
             when (typeRequest) {
                 TypeRequest.GALLERY -> gallery()
                 TypeRequest.CAMERA -> camera()
@@ -139,7 +138,7 @@ class OverlapFragment : Fragment() {
             .addCategory(Intent.CATEGORY_OPENABLE)
             .putExtra(Intent.EXTRA_LOCAL_ONLY, true)
             .setType("image/*")
-        startActivityForResult(intent, Constants.REQUEST_DOCUMENT)
+        startActivityForResult(intent, CRPhoto.REQUEST_DOCUMENT)
     }
 
     private fun combine(isMultiple: Boolean) {
@@ -157,23 +156,23 @@ class OverlapFragment : Fragment() {
         }
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, pickIntent)
         val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
+            .putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, takePhotoIntent)
-        if (!intentList.isEmpty()) {
+        if (intentList.isNotEmpty()) {
             val title = crPhoto?.title ?: getString(R.string.picker_header)
             chooserIntent = Intent.createChooser(intentList.removeAt(intentList.size - 1), title)
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray<Parcelable>())
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && isMultiple) {
-            startActivityForResult(chooserIntent, Constants.REQUEST_COMBINE_MULTIPLE)
+            startActivityForResult(chooserIntent, CRPhoto.REQUEST_COMBINE_MULTIPLE)
         } else {
-            startActivityForResult(chooserIntent, Constants.REQUEST_COMBINE)
+            startActivityForResult(chooserIntent, CRPhoto.REQUEST_COMBINE)
         }
     }
 
     private fun gallery() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, Constants.REQUEST_ATTACH_IMAGE)
+        startActivityForResult(intent, CRPhoto.REQUEST_ATTACH_IMAGE)
     }
 
     private fun camera() {
@@ -185,7 +184,7 @@ class OverlapFragment : Fragment() {
             }
             fileUri = createImageUri()
             takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
-            startActivityForResult(takePictureIntent, Constants.REQUEST_TAKE_PICTURE)
+            startActivityForResult(takePictureIntent, CRPhoto.REQUEST_TAKE_PICTURE)
         }
     }
 
@@ -220,10 +219,10 @@ class OverlapFragment : Fragment() {
         internal const val TAG = "OverlapFragment"
         private const val REQUEST_STORAGE_CODE = 141
 
-        fun newInstance(typeRequest: TypeRequest, caller: CRPhoto): OverlapFragment {
+        fun newInstance(@TypeRequest typeRequest: String, caller: CRPhoto): OverlapFragment {
             return OverlapFragment().apply {
                 val bundle = Bundle().apply {
-                    putSerializable(Constants.REQUEST_TYPE_EXTRA, typeRequest)
+                    putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
                 }
                 this.arguments = bundle
                 this.crPhoto = caller

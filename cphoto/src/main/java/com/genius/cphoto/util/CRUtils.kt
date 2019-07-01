@@ -8,7 +8,7 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
-import com.genius.cphoto.shared.Constants
+import com.genius.cphoto.CRPhoto.Companion.IMAGE_SIZE
 import java.io.IOException
 
 /**
@@ -27,8 +27,8 @@ class CRUtils {
                 ExifInterface.ORIENTATION_ROTATE_90 -> rotate(bitmap, 90f)
                 ExifInterface.ORIENTATION_ROTATE_180 -> rotate(bitmap, 180f)
                 ExifInterface.ORIENTATION_ROTATE_270 -> rotate(bitmap, 270f)
-                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> flip(bitmap, true, false)
-                ExifInterface.ORIENTATION_FLIP_VERTICAL -> flip(bitmap, false, true)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> flip(bitmap, horizontal = true, vertical = false)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> flip(bitmap, horizontal = false, vertical = true)
                 else -> bitmap
             }
         }
@@ -87,7 +87,7 @@ class CRUtils {
             iOptions.inJustDecodeBounds = true
             BitmapFactory.decodeFile(path, iOptions)
 
-            iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: Constants.IMAGE_SIZE, height ?: Constants.IMAGE_SIZE)
+            iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: IMAGE_SIZE, height ?: IMAGE_SIZE)
             iOptions.inJustDecodeBounds = false
 
             val original = BitmapFactory.decodeFile(path, iOptions)

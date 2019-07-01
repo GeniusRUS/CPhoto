@@ -10,7 +10,7 @@ ext {
 
     publishedGroupId = "com.geniusrus.cphoto"
     artifact = "cphoto"
-    libraryVersion = "2.0.6"
+    libraryVersion = "2.1.0"
 
     libraryDescription = "Android take photo library on coroutines"
     siteUrl = 'https://github.com/GeniusRUS/CPhoto'
@@ -38,20 +38,19 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
 
-def verCoroutines='1.1.1'
+def verCoroutines = '1.2.2'
 
 dependencies {
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test:runner:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     compileOnly 'androidx.appcompat:appcompat:1.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$verCoroutines"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$verCoroutines"
 }
 

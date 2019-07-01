@@ -6,11 +6,9 @@ import android.media.ThumbnailUtils
 import android.net.Uri
 import androidx.annotation.StringRes
 import android.util.Pair
+import androidx.annotation.StringDef
 import androidx.fragment.app.FragmentActivity
 import com.genius.cphoto.exceptions.CancelOperationException
-import com.genius.cphoto.shared.Constants
-import com.genius.cphoto.shared.ResponseType
-import com.genius.cphoto.shared.ResponseType.*
 import com.genius.cphoto.shared.TypeRequest
 import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
@@ -31,7 +29,7 @@ class CRPhoto(private val context: Context) {
     private var bitmapMultiPublishSubject: CompletableDeferred<List<Bitmap>>? = null
     private var uriMultiPublishSubject: CompletableDeferred<List<Uri>>? = null
     private var pathMultiPublishSubject: CompletableDeferred<List<String>>? = null
-    private lateinit var response: ResponseType
+    private lateinit var response: String
 
     var title: String? = null
         private set
@@ -42,8 +40,8 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits bitmaps
      */
     @Throws(CancelOperationException::class)
-    suspend fun requestBitmap(typeRequest: TypeRequest): Bitmap {
-        return requestBitmap(typeRequest, Pair(Constants.IMAGE_SIZE, Constants.IMAGE_SIZE))
+    suspend fun requestBitmap(@TypeRequest typeRequest: String): Bitmap {
+        return requestBitmap(typeRequest, Pair(IMAGE_SIZE, IMAGE_SIZE))
     }
 
     /**
@@ -54,7 +52,7 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits single bitmap
      */
     @Throws(CancelOperationException::class)
-    suspend fun requestBitmap(typeRequest: TypeRequest, width: Int, height: Int): Bitmap {
+    suspend fun requestBitmap(@TypeRequest typeRequest: String, width: Int, height: Int): Bitmap {
         return requestBitmap(typeRequest, Pair(width, height))
     }
 
@@ -64,7 +62,7 @@ class CRPhoto(private val context: Context) {
      */
     @Throws(CancelOperationException::class)
     suspend fun requestMultiBitmap(): List<Bitmap> {
-        return requestMultiBitmap(Pair(Constants.IMAGE_SIZE, Constants.IMAGE_SIZE))
+        return requestMultiBitmap(Pair(IMAGE_SIZE, IMAGE_SIZE))
     }
 
     /**
@@ -85,7 +83,7 @@ class CRPhoto(private val context: Context) {
      * @return - explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
-    suspend fun requestBitmap(typeRequest: TypeRequest, bitmapSize: Pair<Int, Int>): Bitmap {
+    suspend fun requestBitmap(@TypeRequest typeRequest: String, bitmapSize: Pair<Int, Int>): Bitmap {
         response = BITMAP
         startOverlapFragment(typeRequest)
         this.bitmapSizes = bitmapSize
@@ -100,7 +98,7 @@ class CRPhoto(private val context: Context) {
      */
     @Throws(CancelOperationException::class)
     @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
-    suspend fun requestUri(typeRequest: TypeRequest): Uri {
+    suspend fun requestUri(@TypeRequest typeRequest: String): Uri {
         response = URI
         startOverlapFragment(typeRequest)
         uriPublishSubject = CompletableDeferred()
@@ -113,7 +111,7 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits a single path
      */
     @Throws(CancelOperationException::class)
-    suspend fun requestPath(typeRequest: TypeRequest): String {
+    suspend fun requestPath(@TypeRequest typeRequest: String): String {
         response = PATH
         startOverlapFragment(typeRequest)
         pathPublishSubject = CompletableDeferred()
@@ -184,7 +182,7 @@ class CRPhoto(private val context: Context) {
      * Calling [OverlapFragment.newInstance] with selected type request and CRPhoto instance
      * @param typeRequest - selected request
      */
-    private fun startOverlapFragment(typeRequest: TypeRequest) {
+    private fun startOverlapFragment(@TypeRequest typeRequest: String) {
         (context as? FragmentActivity)?.let {  activity ->
             activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
                 (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, this)
@@ -340,6 +338,24 @@ class CRPhoto(private val context: Context) {
 
         bitmapMultiPublishSubject?.complete(list)
     }
+
+    @StringDef(BITMAP, URI, PATH)
+    @Retention(AnnotationRetention.SOURCE)
+    private annotation class ResponseType
+
+    companion object {
+        private const val BITMAP = "BITMAP"
+        private const val URI = "URI"
+        private const val PATH = "PATH"
+
+        const val IMAGE_SIZE = 1024
+        const val REQUEST_ATTACH_IMAGE = 9123
+        const val REQUEST_TAKE_PICTURE = 9124
+        const val REQUEST_COMBINE = 9125
+        const val REQUEST_COMBINE_MULTIPLE = 9126
+        const val REQUEST_DOCUMENT = 9127
+        const val REQUEST_TYPE_EXTRA = "request_type_extra"
+    }
 }
 
 /**
@@ -352,16 +368,16 @@ infix fun Bitmap.toThumb(resizeValues: Pair<Int, Int>): Bitmap {
     return ThumbnailUtils.extractThumbnail(this, resizeValues.first, resizeValues.second)
 }
 @Suppress("UNUSED")
-suspend infix fun Context.takePhotoPath(typeRequest: TypeRequest): String {
+suspend infix fun Context.takePhotoPath(@TypeRequest typeRequest: String): String {
     return CRPhoto(this).requestPath(typeRequest)
 }
 @Suppress("UNUSED")
-suspend infix fun Context.takePhotoBitmap(typeRequest: TypeRequest): Bitmap {
+suspend infix fun Context.takePhotoBitmap(@TypeRequest typeRequest: String): Bitmap {
     return CRPhoto(this).requestBitmap(typeRequest)
 }
 
 @Suppress("DEPRECATION")
 @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
-suspend infix fun Context.takePhotoUri(typeRequest: TypeRequest): Uri {
+suspend infix fun Context.takePhotoUri(@TypeRequest typeRequest: String): Uri {
     return CRPhoto(this).requestUri(typeRequest)
 }
