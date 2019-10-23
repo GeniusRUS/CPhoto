@@ -5,30 +5,29 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
-import com.genius.cphoto.shared.Constants
+import androidx.exifinterface.media.ExifInterface
+import com.genius.cphoto.CRPhoto.Companion.IMAGE_SIZE
 import java.io.IOException
 
 /**
  * Created by Genius on 03.12.2017.
  */
-class Utils {
+class CRUtils {
 
     companion object {
 
         @Throws(IOException::class)
         private fun modifyOrientation(bitmap: Bitmap, image_absolute_path: String?): Bitmap {
-            val ei = ExifInterface(image_absolute_path)
-            val orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            val ei = ExifInterface(image_absolute_path ?: throw IllegalStateException("Image path is null"))
 
-            return when (orientation) {
+            return when (ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
                 ExifInterface.ORIENTATION_ROTATE_90 -> rotate(bitmap, 90f)
                 ExifInterface.ORIENTATION_ROTATE_180 -> rotate(bitmap, 180f)
                 ExifInterface.ORIENTATION_ROTATE_270 -> rotate(bitmap, 270f)
-                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> flip(bitmap, true, false)
-                ExifInterface.ORIENTATION_FLIP_VERTICAL -> flip(bitmap, false, true)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> flip(bitmap, horizontal = true, vertical = false)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> flip(bitmap, horizontal = false, vertical = true)
                 else -> bitmap
             }
         }
@@ -75,7 +74,7 @@ class Utils {
         fun getBitmap(context: Context, uri: Uri, width: Int?, height: Int?): Bitmap {
             var path: String?
             path = try {
-                FileUtils.getPath(context, uri) //from Gallery
+                CRFileUtils.getPath(context, uri) //from Gallery
             } catch (e: Exception) {
                 null
             }
@@ -87,7 +86,7 @@ class Utils {
             iOptions.inJustDecodeBounds = true
             BitmapFactory.decodeFile(path, iOptions)
 
-            iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: Constants.IMAGE_SIZE, height ?: Constants.IMAGE_SIZE)
+            iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: IMAGE_SIZE, height ?: IMAGE_SIZE)
             iOptions.inJustDecodeBounds = false
 
             val original = BitmapFactory.decodeFile(path, iOptions)

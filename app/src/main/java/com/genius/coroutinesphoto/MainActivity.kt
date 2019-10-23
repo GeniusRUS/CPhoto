@@ -1,15 +1,13 @@
 package com.genius.coroutinesphoto
 
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
-import android.view.View
-import android.widget.ImageView
-import android.widget.LinearLayout
+import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 
 import com.genius.cphoto.CRPhoto
 import com.genius.cphoto.exceptions.CancelOperationException
 import com.genius.cphoto.shared.TypeRequest
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,12 +22,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val thumbsContent = findViewById<LinearLayout>(R.id.thumbs)
-        val image = findViewById<ImageView>(R.id.image)
-
-        findViewById<View>(R.id.get).setOnClickListener { v ->
+        get.setOnClickListener { v ->
             image.setImageBitmap(null)
-            thumbsContent.removeAllViews()
+            thumbs.removeAllViews()
 
             launch {
                 try {
@@ -40,9 +35,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             }
         }
 
-        findViewById<View>(R.id.take).setOnClickListener { v ->
+        take.setOnClickListener { v ->
             image.setImageBitmap(null)
-            thumbsContent.removeAllViews()
+            thumbs.removeAllViews()
 
             launch {
                 try {
@@ -53,9 +48,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             }
         }
 
-        findViewById<View>(R.id.combine).setOnClickListener { v ->
+        combine.setOnClickListener { v ->
             image.setImageBitmap(null)
-            thumbsContent.removeAllViews()
+            thumbs.removeAllViews()
 
             launch {
                 try {
@@ -66,9 +61,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             }
         }
 
-        findViewById<View>(R.id.combine_multiple).setOnClickListener { v ->
+        combine_multiple.setOnClickListener { v ->
             image.setImageBitmap(null)
-            thumbsContent.removeAllViews()
+            thumbs.removeAllViews()
 
             launch {
                 try {
@@ -79,9 +74,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             }
         }
 
-        findViewById<View>(R.id.document).setOnClickListener { v ->
+        document.setOnClickListener { v ->
             image.setImageBitmap(null)
-            thumbsContent.removeAllViews()
+            thumbs.removeAllViews()
 
             launch {
                 try {

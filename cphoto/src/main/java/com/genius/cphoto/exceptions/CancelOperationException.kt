@@ -5,4 +5,4 @@ import com.genius.cphoto.shared.TypeRequest
 /**
  * Created by Genius on 03.12.2017.
  */
-class CancelOperationException(var type: TypeRequest): Exception(type.name)
+class CancelOperationException(@TypeRequest typeRequest: String): Exception(typeRequest)
