@@ -14,6 +14,7 @@ import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
+import android.content.ContextWrapper
 
 /**
  * Created by Genius on 03.12.2017.
@@ -183,13 +184,17 @@ class CRPhoto(private val context: Context) {
      * @param typeRequest - selected request
      */
     private fun startOverlapFragment(@TypeRequest typeRequest: String) {
-        (context as? FragmentActivity)?.let {  activity ->
-            activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
-                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, this)
-            } ?: activity.supportFragmentManager.beginTransaction()
-                .add(OverlapFragment.newInstance(typeRequest, this), OverlapFragment.TAG)
-                .commit()
-        } ?: propagateThrowable(ClassCastException("Attached context is not FragmentActivity"))
+        val activity = findActivityInContext(context)
+        if (activity == null) {
+            propagateThrowable(ClassCastException("Couldn't find FragmentActivity in attached Context"))
+            return
+        }
+
+        activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
+            (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, this)
+        } ?: activity.supportFragmentManager.beginTransaction()
+            .add(OverlapFragment.newInstance(typeRequest, this), OverlapFragment.TAG)
+            .commit()
     }
 
     /**
@@ -200,6 +205,22 @@ class CRPhoto(private val context: Context) {
     @Throws(IOException::class)
     private fun getBitmapFromStream(uri: Uri): Bitmap? {
         return CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
+    }
+
+    /**
+     * Try to find the FragmentActivity inside current Context
+     */
+    private fun findActivityInContext(context: Context): FragmentActivity? {
+        if (context is FragmentActivity) return context
+
+        var currentStepContext = context
+        while (currentStepContext is ContextWrapper) {
+            if (currentStepContext is FragmentActivity) {
+                return currentStepContext
+            }
+            currentStepContext = currentStepContext.baseContext
+        }
+        return null
     }
 
     /**
