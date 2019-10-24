@@ -23,8 +23,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         setContentView(R.layout.activity_main)
 
         get.setOnClickListener { v ->
-            image.setImageBitmap(null)
-            thumbs.removeAllViews()
+            clear()
 
             launch {
                 try {
@@ -36,8 +35,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
 
         take.setOnClickListener { v ->
-            image.setImageBitmap(null)
-            thumbs.removeAllViews()
+            clear()
 
             launch {
                 try {
@@ -49,8 +47,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
 
         combine.setOnClickListener { v ->
-            image.setImageBitmap(null)
-            thumbs.removeAllViews()
+            clear()
 
             launch {
                 try {
@@ -62,8 +59,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
 
         combine_multiple.setOnClickListener { v ->
-            image.setImageBitmap(null)
-            thumbs.removeAllViews()
+            clear()
 
             launch {
                 try {
@@ -75,8 +71,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
 
         document.setOnClickListener { v ->
-            image.setImageBitmap(null)
-            thumbs.removeAllViews()
+            clear()
 
             launch {
                 try {
@@ -86,5 +81,18 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                 }
             }
         }
+
+        fragment.setOnClickListener {
+            supportFragmentManager
+                .beginTransaction()
+                .add(R.id.fl_container, MainFragment(), "FragmentTag")
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+
+    fun clear() {
+        image.setImageBitmap(null)
+        thumbs.removeAllViews()
     }
 }
