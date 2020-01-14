@@ -21,13 +21,13 @@
 
 
             <Button
-                android:id="@+id/get"
+                android:id="@+id/gallery"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/label_gallery" />
 
             <Button
-                android:id="@+id/take"
+                android:id="@+id/camera"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/label_camera" />

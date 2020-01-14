@@ -5,8 +5,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 
 import com.genius.cphoto.CRPhoto
-import com.genius.cphoto.exceptions.CancelOperationException
-import com.genius.cphoto.shared.TypeRequest
+import com.genius.cphoto.CancelOperationException
+import com.genius.cphoto.NotPermissionException
+import com.genius.cphoto.TypeRequest
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +23,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        get.setOnClickListener { v ->
+        gallery.setOnClickListener { v ->
             clear()
 
             launch {
@@ -30,11 +31,13 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.GALLERY, 300, 300))
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+                } catch (e: NotPermissionException) {
+                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
                 }
             }
         }
 
-        take.setOnClickListener { v ->
+        camera.setOnClickListener { v ->
             clear()
 
             launch {
@@ -42,6 +45,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.CAMERA))
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+                } catch (e: NotPermissionException) {
+                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -54,6 +59,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     image.setImageBitmap(CRPhoto(v.context).titleCombine("Custom chooser title").requestBitmap(TypeRequest.COMBINE))
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+                } catch (e: NotPermissionException) {
+                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -66,6 +73,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     Toast.makeText(this@MainActivity, CRPhoto(v.context).requestMultiPath().toString(), Toast.LENGTH_LONG).show()
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+                } catch (e: NotPermissionException) {
+                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -78,6 +87,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.FROM_DOCUMENT))
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+                } catch (e: NotPermissionException) {
+                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -85,13 +96,13 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         fragment.setOnClickListener {
             supportFragmentManager
                 .beginTransaction()
-                .add(R.id.fl_container, MainFragment(), "FragmentTag")
+                .add(R.id.fl_container, MainFragment(), MainFragment.TAG)
                 .addToBackStack(null)
                 .commit()
         }
     }
 
-    fun clear() {
+    private fun clear() {
         image.setImageBitmap(null)
         thumbs.removeAllViews()
     }

@@ -1,5 +1,6 @@
 package com.genius.cphoto
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
@@ -8,13 +9,16 @@ import androidx.annotation.StringRes
 import android.util.Pair
 import androidx.annotation.StringDef
 import androidx.fragment.app.FragmentActivity
-import com.genius.cphoto.exceptions.CancelOperationException
-import com.genius.cphoto.shared.TypeRequest
 import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
 import android.content.ContextWrapper
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.ResultReceiver
+import androidx.annotation.RequiresApi
 
 /**
  * Created by Genius on 03.12.2017.
@@ -25,6 +29,21 @@ class CRPhoto(private val context: Context) {
     private var bitmapSizes: Pair<Int, Int>? = null
     private var publishSubject: CompletableDeferred<*>? = null
     private lateinit var response: String
+    private val receiver: ResultReceiver by lazy {
+        object : ResultReceiver(Handler(context.mainLooper)) {
+            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                if (resultCode == OverlapFragment.SUCCESS_CODE) {
+                    when {
+                        resultData?.containsKey(OverlapFragment.SINGLE_PAYLOAD) == true -> resultData.getParcelable<Uri>(OverlapFragment.SINGLE_PAYLOAD)?.let { propagateResult(it) }
+                        resultData?.containsKey(OverlapFragment.MULTI_PAYLOAD) == true -> resultData.getParcelableArrayList<Uri>(OverlapFragment.MULTI_PAYLOAD)?.let { propagateMultipleResult(it) }
+                    }
+                } else if (resultCode == OverlapFragment.ERROR_CODE) {
+                    val exception = resultData?.getSerializable(OverlapFragment.ERROR_PAYLOAD) as? Exception? ?: return
+                    publishSubject?.completeExceptionally(exception)
+                }
+            }
+        }
+    }
 
     var title: String? = null
         private set
@@ -186,15 +205,17 @@ class CRPhoto(private val context: Context) {
     private fun startOverlapFragment(@TypeRequest typeRequest: String) {
         val activity = findActivityInContext(context)
         if (activity == null) {
-            propagateThrowable(ClassCastException("Couldn't find FragmentActivity in attached Context"))
+            publishSubject?.completeExceptionally(ClassCastException("Couldn't find FragmentActivity in attached Context"))
             return
         }
 
-        activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
-            (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, this)
-        } ?: activity.supportFragmentManager.beginTransaction()
-            .add(OverlapFragment.newInstance(typeRequest, this), OverlapFragment.TAG)
-            .commit()
+        if (!activity.supportFragmentManager.isStateSaved) {
+            activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
+                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, receiver, title)
+            } ?: activity.supportFragmentManager.beginTransaction()
+                .add(OverlapFragment.newInstance(typeRequest, receiver, title), OverlapFragment.TAG)
+                .commit()
+        }
     }
 
     /**
@@ -221,32 +242,6 @@ class CRPhoto(private val context: Context) {
             currentStepContext = currentStepContext.baseContext
         }
         return null
-    }
-
-    /**
-     * Processing the result of selecting images by the user
-     * @param uri - single uri of selected image
-     */
-    internal fun onActivityResult(uri: Uri?) {
-        uri?.let {
-            propagateResult(it)
-        }
-    }
-
-    /**
-     *Processing the results of selecting images by the user
-     * @param uri - list of uris of selected images
-     */
-    internal fun onActivityResult(uri: List<Uri>) {
-        propagateMultipleResult(uri)
-    }
-
-    /**
-     * Handle throwable from fragment
-     * @param error - throwable
-     */
-    internal fun propagateThrowable(error: Throwable) {
-        publishSubject?.completeExceptionally(error)
     }
 
     /**
@@ -296,7 +291,11 @@ class CRPhoto(private val context: Context) {
      */
     @Suppress("UNCHECKED_CAST")
     private fun propagatePath(uri: Uri) {
-        (publishSubject as? CompletableDeferred<String>)?.complete(CRFileUtils.getPath(context, uri))
+        CRFileUtils.getPath(context, uri)?.let {
+            (publishSubject as? CompletableDeferred<String>)?.complete(it)
+        } ?: (publishSubject as? CompletableDeferred<String>)?.completeExceptionally(
+            NullPointerException("Cannot recover image for URI: $uri")
+        )
     }
 
     /**
@@ -315,7 +314,7 @@ class CRPhoto(private val context: Context) {
     @Suppress("UNCHECKED_CAST")
     private fun propagateMultiplePaths(uris: List<Uri>) {
         (publishSubject as? CompletableDeferred<List<String>>)?.let { continuation ->
-            continuation.complete(uris.map { uri -> CRFileUtils.getPath(context, uri) } )
+            continuation.complete(uris.mapNotNull { uri -> CRFileUtils.getPath(context, uri) })
         }
     }
 
@@ -341,10 +340,6 @@ class CRPhoto(private val context: Context) {
         (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(images)
     }
 
-    @StringDef(BITMAP, URI, PATH)
-    @Retention(AnnotationRetention.SOURCE)
-    private annotation class ResponseType
-
     companion object {
         private const val BITMAP = "BITMAP"
         private const val URI = "URI"
@@ -357,6 +352,28 @@ class CRPhoto(private val context: Context) {
         const val REQUEST_COMBINE_MULTIPLE = 9126
         const val REQUEST_DOCUMENT = 9127
         const val REQUEST_TYPE_EXTRA = "request_type_extra"
+        const val RECEIVER_EXTRA = "receiver_extra"
+        const val TITLE_EXTRA = "title_extra"
+    }
+}
+
+@SuppressLint("NewApi")
+@StringDef(
+    TypeRequest.CAMERA,
+    TypeRequest.GALLERY,
+    TypeRequest.COMBINE,
+    TypeRequest.COMBINE_MULTIPLE,
+    TypeRequest.FROM_DOCUMENT)
+@Retention(AnnotationRetention.SOURCE)
+annotation class TypeRequest {
+    companion object {
+        const val CAMERA = "CAMERA"
+        const val GALLERY = "GALLERY"
+        const val COMBINE = "COMBINE"
+        @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
+        const val COMBINE_MULTIPLE = "COMBINE_MULTIPLE"
+        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+        const val FROM_DOCUMENT = "FROM_DOCUMENT"
     }
 }
 

@@ -14,6 +14,9 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.io.File;
 
 /**
@@ -34,11 +37,8 @@ public class CRFileUtils {
     /**
      * @return Whether the URI is a local one.
      */
-    public static boolean isLocal(String url) {
-        if (url != null && !url.startsWith("http://") && !url.startsWith("https://")) {
-            return true;
-        }
-        return false;
+    public static boolean isLocal(@Nullable String url) {
+        return url != null && !url.startsWith("http://") && !url.startsWith("https://");
     }
 
     /**
@@ -46,7 +46,7 @@ public class CRFileUtils {
      * @return Whether the Uri authority is ExternalStorageProvider.
      * @author paulburke
      */
-    public static boolean isExternalStorageDocument(Uri uri) {
+    public static boolean isExternalStorageDocument(@NonNull Uri uri) {
         return "com.android.externalstorage.documents".equals(uri.getAuthority());
     }
 
@@ -55,7 +55,7 @@ public class CRFileUtils {
      * @return Whether the Uri authority is DownloadsProvider.
      * @author paulburke
      */
-    public static boolean isDownloadsDocument(Uri uri) {
+    public static boolean isDownloadsDocument(@NonNull Uri uri) {
         return "com.android.providers.downloads.documents".equals(uri.getAuthority());
     }
 
@@ -64,7 +64,7 @@ public class CRFileUtils {
      * @return Whether the Uri authority is MediaProvider.
      * @author paulburke
      */
-    public static boolean isMediaDocument(Uri uri) {
+    public static boolean isMediaDocument(@NonNull Uri uri) {
         return "com.android.providers.media.documents".equals(uri.getAuthority());
     }
 
@@ -72,7 +72,7 @@ public class CRFileUtils {
      * @param uri The Uri to check.
      * @return Whether the Uri authority is Google Photos.
      */
-    public static boolean isGooglePhotosUri(Uri uri) {
+    public static boolean isGooglePhotosUri(@NonNull Uri uri) {
         return "com.google.android.apps.photos.content".equals(uri.getAuthority());
     }
 
@@ -87,8 +87,11 @@ public class CRFileUtils {
      * @return The value of the _data column, which is typically a file path.
      * @author paulburke
      */
-    public static String getDataColumn(Context context, Uri uri, String selection,
-                                       String[] selectionArgs) {
+    @Nullable
+    public static String getDataColumn(@NonNull Context context,
+                                       @NonNull Uri uri,
+                                       @Nullable String selection,
+                                       @Nullable String[] selectionArgs) {
 
         Cursor cursor = null;
         final String column = "_data";
@@ -127,8 +130,9 @@ public class CRFileUtils {
      * @see #isLocal(String)
      * @see #getFile(Context, Uri)
      */
+    @Nullable
     @SuppressLint("NewApi")
-    public static String getPath(final Context context, final Uri uri) {
+    public static String getPath(final @NonNull Context context, final @NonNull Uri uri) {
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
         // DocumentProvider
@@ -172,18 +176,18 @@ public class CRFileUtils {
                 final String[] split = docId.split(":");
                 final String type = split[0];
 
-                Uri contentUri = null;
+                Uri contentUri;
                 if ("image".equals(type)) {
                     contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
                 } else if ("video".equals(type)) {
                     contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
                 } else if ("audio".equals(type)) {
                     contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-                }
+                } else return null;
 
                 final String selection = "_id=?";
                 final String[] selectionArgs = new String[]{
-                        split[1]
+                    split[1]
                 };
 
                 return getDataColumn(context, contentUri, selection, selectionArgs);
@@ -214,10 +218,11 @@ public class CRFileUtils {
      * @author paulburke
      * @see #getPath(Context, Uri)
      */
-    public static File getFile(Context context, Uri uri) {
+    @Nullable
+    public static File getFile(@NonNull Context context, @Nullable Uri uri) {
         if (uri != null) {
             String path = getPath(context, uri);
-            if (path != null && isLocal(path)) {
+            if (isLocal(path)) {
                 return new File(path);
             }
         }
@@ -229,9 +234,10 @@ public class CRFileUtils {
      * @param uri - file uri
      * @return - Mime type in string
      */
-    public static String getMimeType(Context context, Uri uri) {
+    @Nullable
+    public static String getMimeType(@NonNull Context context, @NonNull Uri uri) {
         String mimeType;
-        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
+        if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme())) {
             ContentResolver cr = context.getContentResolver();
             mimeType = cr.getType(uri);
         } else {

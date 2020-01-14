@@ -3,6 +3,7 @@ package com.genius.cphoto
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,13 +11,10 @@ import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
 import androidx.fragment.app.Fragment
-import com.genius.cphoto.exceptions.CancelOperationException
-import com.genius.cphoto.exceptions.ExternalStorageWriteException
-import com.genius.cphoto.exceptions.NotPermissionException
-import com.genius.cphoto.shared.TypeRequest
 import com.genius.cphoto.util.CRUtils
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Created by Genius on 03.12.2017.
@@ -25,7 +23,7 @@ class OverlapFragment : Fragment() {
 
     private var fileUri: Uri? = null
     private lateinit var typeRequest: String
-    private var crPhoto: CRPhoto? = null
+    private var receiver: ResultReceiver? = null
 
     init {
         retainInstance = true
@@ -40,7 +38,11 @@ class OverlapFragment : Fragment() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == REQUEST_STORAGE_CODE && PackageManager.PERMISSION_DENIED == grantResults.getOrNull(0)) {
-            crPhoto?.propagateThrowable(NotPermissionException(typeRequest))
+            receiver?.send(ERROR_CODE,
+                Bundle().apply {
+                    putSerializable(ERROR_PAYLOAD, NotPermissionException(typeRequest))
+                }
+            )
             return
         }
 
@@ -64,39 +66,72 @@ class OverlapFragment : Fragment() {
                     data.clipData?.let { clipData ->
                         val uris = (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
 
-                        crPhoto?.onActivityResult(uris)
+                        receiver?.send(SUCCESS_CODE,
+                            Bundle().apply {
+                                putParcelableArrayList(MULTI_PAYLOAD, ArrayList(uris))
+                            }
+                        )
                     }
 
                     removeUnusedFile()
                 } else if (data?.data != null) {
                     data.data?.let { uri ->
-                        val uris = ArrayList<Uri>()
-                        uris.add(uri)
-                        crPhoto?.onActivityResult(uris)
+                        receiver?.send(SUCCESS_CODE,
+                            Bundle().apply {
+                                putParcelableArrayList(MULTI_PAYLOAD, arrayListOf(uri))
+                            }
+                        )
                     }
 
                     removeUnusedFile()
                 } else if (fileUri != null) {
                     fileUri?.let { uri ->
-                        val uris = listOf(uri)
-                        crPhoto?.onActivityResult(uris)
+                        receiver?.send(SUCCESS_CODE,
+                            Bundle().apply {
+                                putParcelableArrayList(MULTI_PAYLOAD, arrayListOf(uri))
+                            }
+                        )
                     }
                 } else {
-                    crPhoto?.onActivityResult(fileUri)
+                    receiver?.send(SUCCESS_CODE,
+                        Bundle().apply {
+                            putParcelable(SINGLE_PAYLOAD, fileUri)
+                        }
+                    )
                 }
-                TypeRequest.CAMERA -> crPhoto?.onActivityResult(fileUri)
+                TypeRequest.CAMERA -> receiver?.send(SUCCESS_CODE,
+                    Bundle().apply {
+                        putParcelable(SINGLE_PAYLOAD, fileUri)
+                    }
+                )
                 TypeRequest.GALLERY, TypeRequest.COMBINE -> if (data != null && data.data != null) {
-                    crPhoto?.onActivityResult(data.data)
+                    receiver?.send(SUCCESS_CODE,
+                        Bundle().apply {
+                            putParcelable(SINGLE_PAYLOAD, data.data)
+                        }
+                    )
                     removeUnusedFile()
                 } else {
-                    crPhoto?.onActivityResult(fileUri)
+                    receiver?.send(SUCCESS_CODE,
+                        Bundle().apply {
+                            putParcelable(SINGLE_PAYLOAD, fileUri)
+                        }
+                    )
                 }
                 TypeRequest.FROM_DOCUMENT -> if (data != null && data.data != null) {
-                    crPhoto?.onActivityResult(data.data)
+                    receiver?.send(SUCCESS_CODE,
+                        Bundle().apply {
+                            putParcelable(SINGLE_PAYLOAD, data.data)
+                        }
+                    )
                 }
             }
         } else {
-            crPhoto?.propagateThrowable(CancelOperationException(typeRequest))
+            receiver?.send(ERROR_CODE,
+                Bundle().apply {
+                    putSerializable(ERROR_PAYLOAD, CancelOperationException(typeRequest))
+                }
+            )
             removeUnusedFile()
         }
     }
@@ -105,18 +140,19 @@ class OverlapFragment : Fragment() {
      * Обрабатывает новый запрос на картинку
      * В процессе задает с помощью [setArguments] новый тип реквеста [typeRequest]
      */
-    fun newRequest(@TypeRequest typeRequest: String, caller: CRPhoto) {
-        val bundle = Bundle().apply {
+    fun newRequest(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?) {
+        arguments = Bundle().apply {
             putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
+            putParcelable(CRPhoto.RECEIVER_EXTRA, receiver)
+            title?.let { putString(CRPhoto.TITLE_EXTRA, it) }
         }
-        this.arguments = bundle
 
         handleIntent()
-        this.crPhoto = caller
     }
 
     private fun handleIntent() {
         typeRequest = arguments?.getString(CRPhoto.REQUEST_TYPE_EXTRA) ?: return
+        receiver = arguments?.getParcelable(CRPhoto.RECEIVER_EXTRA) as ResultReceiver? ?: return
 
         if (hasPermission()) {
             @SuppressLint("NewApi")
@@ -143,13 +179,16 @@ class OverlapFragment : Fragment() {
 
     private fun combine(isMultiple: Boolean) {
         if (!CRUtils.isExternalStorageWritable()) {
-            crPhoto?.propagateThrowable(ExternalStorageWriteException())
+            receiver?.send(ERROR_CODE,
+                Bundle().apply {
+                    putSerializable(ERROR_PAYLOAD, ExternalStorageWriteException())
+                }
+            )
             return
         }
 
         fileUri = createImageUri()
         var intentList: MutableList<Intent> = ArrayList()
-        var chooserIntent: Intent? = null
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, isMultiple)
@@ -158,16 +197,25 @@ class OverlapFragment : Fragment() {
         val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             .putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, takePhotoIntent)
-        if (intentList.isNotEmpty()) {
-            val title = crPhoto?.title ?: getString(R.string.picker_header)
-            chooserIntent = Intent.createChooser(intentList.removeAt(intentList.size - 1), title)
-            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray<Parcelable>())
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && isMultiple) {
-            startActivityForResult(chooserIntent, CRPhoto.REQUEST_COMBINE_MULTIPLE)
-        } else {
-            startActivityForResult(chooserIntent, CRPhoto.REQUEST_COMBINE)
-        }
+        val chooserIntent = if (intentList.isNotEmpty()) {
+            val title = arguments?.getString(CRPhoto.TITLE_EXTRA)
+            Intent.createChooser(intentList.removeAt(intentList.size - 1), title).apply {
+                putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray<Parcelable>())
+            }
+        } else null
+
+        chooserIntent?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && isMultiple) {
+                startActivityForResult(it, CRPhoto.REQUEST_COMBINE_MULTIPLE)
+            } else {
+                startActivityForResult(it, CRPhoto.REQUEST_COMBINE)
+            }
+        } ?: receiver?.send(ERROR_CODE,
+            Bundle().apply {
+                putSerializable(ERROR_PAYLOAD, ActivityNotFoundException())
+                removeUnusedFile()
+            }
+        )
     }
 
     private fun gallery() {
@@ -179,13 +227,21 @@ class OverlapFragment : Fragment() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             if (!CRUtils.isExternalStorageWritable()) {
-                crPhoto?.propagateThrowable(ExternalStorageWriteException())
+                receiver?.send(ERROR_CODE,
+                    Bundle().apply {
+                        putSerializable(ERROR_PAYLOAD, ExternalStorageWriteException())
+                    }
+                )
                 return
             }
             fileUri = createImageUri()
             takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
             startActivityForResult(takePictureIntent, CRPhoto.REQUEST_TAKE_PICTURE)
-        }
+        } else receiver?.send(ERROR_CODE,
+            Bundle().apply {
+                putSerializable(ERROR_PAYLOAD, ActivityNotFoundException())
+            }
+        )
     }
 
     private fun hasPermission(): Boolean {
@@ -203,29 +259,40 @@ class OverlapFragment : Fragment() {
      */
     private fun removeUnusedFile() {
         fileUri?.let {
-            context?.contentResolver?.delete(it, null, null)
+            if (context?.contentResolver?.delete(it, null, null) != 0) {
+                fileUri = null
+            }
         }
     }
 
     private fun createImageUri(): Uri? {
-        val contentResolver = context?.contentResolver
-        val cv = ContentValues()
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        cv.put(MediaStore.Images.Media.TITLE, timeStamp)
-        return contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()))
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.ImageColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            }
+        }
+        return context?.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
     }
 
     companion object {
         internal const val TAG = "OverlapFragment"
         private const val REQUEST_STORAGE_CODE = 141
 
-        fun newInstance(@TypeRequest typeRequest: String, caller: CRPhoto): OverlapFragment {
+        const val SUCCESS_CODE = 1100
+        const val ERROR_CODE = 1101
+        const val SINGLE_PAYLOAD = "single_payload"
+        const val MULTI_PAYLOAD = "multi_payload"
+        const val ERROR_PAYLOAD = "error_payload"
+
+        fun newInstance(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?): OverlapFragment {
             return OverlapFragment().apply {
-                val bundle = Bundle().apply {
+                arguments = Bundle().apply {
                     putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
+                    putParcelable(CRPhoto.RECEIVER_EXTRA, receiver)
+                    title?.let { putString(CRPhoto.TITLE_EXTRA, it) }
                 }
-                this.arguments = bundle
-                this.crPhoto = caller
             }
         }
     }
