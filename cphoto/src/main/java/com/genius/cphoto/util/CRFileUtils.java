@@ -106,6 +106,7 @@ public class CRFileUtils {
                 if (DEBUG)
                     DatabaseUtils.dumpCursor(cursor);
 
+                if (cursor.getColumnCount() == 0) return null;
                 final int column_index = cursor.getColumnIndexOrThrow(column);
                 return cursor.getString(column_index);
             }

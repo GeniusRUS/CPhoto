@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Environment
 import androidx.exifinterface.media.ExifInterface
 import com.genius.cphoto.CRPhoto.Companion.IMAGE_SIZE
+import java.io.FileDescriptor
 import java.io.IOException
 
 /**
@@ -19,8 +20,13 @@ class CRUtils {
     companion object {
 
         @Throws(IOException::class)
-        private fun modifyOrientation(bitmap: Bitmap, image_absolute_path: String?): Bitmap {
-            val ei = ExifInterface(image_absolute_path ?: throw IllegalStateException("Image path is null"))
+        private fun modifyOrientation(bitmap: Bitmap?, absolutePath: String?, fileDescriptor: FileDescriptor?): Bitmap {
+            val ei = when {
+                bitmap == null -> throw IllegalStateException("Decoded bitmap is null")
+                !absolutePath.isNullOrEmpty() -> ExifInterface(absolutePath)
+                fileDescriptor != null -> ExifInterface(fileDescriptor)
+                else -> throw IllegalStateException("Sources is null")
+            }
 
             return when (ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
                 ExifInterface.ORIENTATION_ROTATE_90 -> rotate(bitmap, 90f)
@@ -72,26 +78,27 @@ class CRUtils {
 
         @Throws(IOException::class)
         fun getBitmap(context: Context, uri: Uri, width: Int?, height: Int?): Bitmap {
-            var path: String?
-            path = try {
-                CRFileUtils.getPath(context, uri) //from Gallery
+            val path: String? = try {
+                CRFileUtils.getPath(context, uri) // from local storage
             } catch (e: Exception) {
                 null
             }
 
-            if (path == null)
-                path = uri.path
-
+            var fileDescriptor: FileDescriptor? = null
             val iOptions = BitmapFactory.Options()
             iOptions.inJustDecodeBounds = true
-            BitmapFactory.decodeFile(path, iOptions)
-
             iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: IMAGE_SIZE, height ?: IMAGE_SIZE)
             iOptions.inJustDecodeBounds = false
 
-            val original = BitmapFactory.decodeFile(path, iOptions)
+            val original = if (path == null) {
+                fileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")?.fileDescriptor
+                val content = context.contentResolver.openInputStream(uri)
+                BitmapFactory.decodeStream(content, null, iOptions)
+            } else {
+                BitmapFactory.decodeFile(path, iOptions)
+            }
 
-            return modifyOrientation(original, path)
+            return modifyOrientation(original, path, fileDescriptor)
         }
 
         private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
