@@ -29,6 +29,7 @@ class CRPhoto(private val context: Context) {
     private var bitmapSizes: Pair<Int, Int>? = null
     private var publishSubject: CompletableDeferred<*>? = null
     private lateinit var response: String
+    private var excludedPackages: List<String>? = null
     private val receiver: ResultReceiver by lazy {
         object : ResultReceiver(Handler(context.mainLooper)) {
             override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
@@ -188,6 +189,16 @@ class CRPhoto(private val context: Context) {
     }
 
     /**
+     * Excludes selected applications from picker
+     * @param appPackages - packages to exclude
+     * @return - parent class
+     */
+    fun excludedApplicationsFromCombine(vararg appPackages: String): CRPhoto {
+        this.excludedPackages = appPackages.toList()
+        return this
+    }
+
+    /**
      * Adding title to intent chooser on resource id
      * @param titleId - title in resources id
      * @return - parent class
@@ -213,7 +224,7 @@ class CRPhoto(private val context: Context) {
             activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
                 (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, receiver, title)
             } ?: activity.supportFragmentManager.beginTransaction()
-                .add(OverlapFragment.newInstance(typeRequest, receiver, title), OverlapFragment.TAG)
+                .add(OverlapFragment.newInstance(typeRequest, receiver, title, excludedPackages), OverlapFragment.TAG)
                 .commit()
         }
     }
@@ -354,6 +365,7 @@ class CRPhoto(private val context: Context) {
         const val REQUEST_TYPE_EXTRA = "request_type_extra"
         const val RECEIVER_EXTRA = "receiver_extra"
         const val TITLE_EXTRA = "title_extra"
+        const val EXCLUDED_PACKAGES_EXTRA = "excluded_packages_extra"
     }
 }
 

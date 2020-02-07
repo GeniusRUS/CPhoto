@@ -56,7 +56,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
             launch {
                 try {
-                    image.setImageBitmap(CRPhoto(v.context).titleCombine("Custom chooser title").requestBitmap(TypeRequest.COMBINE))
+                    image.setImageBitmap(CRPhoto(v.context)
+                        .titleCombine("Custom chooser title")
+                        .excludedApplicationsFromCombine("ru.yandex.disk")
+                        .requestBitmap(TypeRequest.COMBINE))
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
                 } catch (e: NotPermissionException) {
@@ -70,7 +73,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
             launch {
                 try {
-                    Toast.makeText(this@MainActivity, CRPhoto(v.context).requestMultiPath().toString(), Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, CRPhoto(v.context)
+                        .excludedApplicationsFromCombine("ru.yandex.disk")
+                        .requestMultiPath().toString(), Toast.LENGTH_LONG).show()
                 } catch (e: CancelOperationException) {
                     Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
                 } catch (e: NotPermissionException) {

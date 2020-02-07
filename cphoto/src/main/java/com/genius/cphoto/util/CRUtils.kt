@@ -44,10 +44,11 @@ class CRUtils {
          * @param list - List<Intent> for receiving incoming Intents
          * @param intent - Intent for receive
         </Intent> */
-        fun addIntentsToList(context: Context, list: MutableList<Intent>, intent: Intent): MutableList<Intent> {
+        fun addIntentsToList(context: Context, list: MutableList<Intent>, intent: Intent, excludedPackages: List<String>? = null): MutableList<Intent> {
             val resInfo = context.packageManager.queryIntentActivities(intent, 0)
             for (resolveInfo in resInfo) {
                 val packageName = resolveInfo.activityInfo.packageName
+                if (excludedPackages?.contains(packageName) == true) continue
                 val targetedIntent = Intent(intent)
                 targetedIntent.`package` = packageName
                 list.add(targetedIntent)

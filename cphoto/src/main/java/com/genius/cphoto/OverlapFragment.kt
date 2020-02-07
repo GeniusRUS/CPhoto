@@ -193,7 +193,7 @@ class OverlapFragment : Fragment() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, isMultiple)
         }
-        intentList = CRUtils.addIntentsToList(requireContext(), intentList, pickIntent)
+        intentList = CRUtils.addIntentsToList(requireContext(), intentList, pickIntent, arguments?.getStringArrayList(CRPhoto.EXCLUDED_PACKAGES_EXTRA))
         val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             .putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, takePhotoIntent)
@@ -286,12 +286,13 @@ class OverlapFragment : Fragment() {
         const val MULTI_PAYLOAD = "multi_payload"
         const val ERROR_PAYLOAD = "error_payload"
 
-        fun newInstance(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?): OverlapFragment {
+        fun newInstance(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?, appPackages: List<String>?): OverlapFragment {
             return OverlapFragment().apply {
                 arguments = Bundle().apply {
                     putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
                     putParcelable(CRPhoto.RECEIVER_EXTRA, receiver)
                     title?.let { putString(CRPhoto.TITLE_EXTRA, it) }
+                    appPackages?.let { putStringArrayList(CRPhoto.EXCLUDED_PACKAGES_EXTRA, ArrayList(it)) }
                 }
             }
         }
