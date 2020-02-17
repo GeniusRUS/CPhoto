@@ -222,7 +222,7 @@ class CRPhoto(private val context: Context) {
 
         if (!activity.supportFragmentManager.isStateSaved) {
             activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
-                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, receiver, title)
+                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, receiver, title, excludedPackages)
             } ?: activity.supportFragmentManager.beginTransaction()
                 .add(OverlapFragment.newInstance(typeRequest, receiver, title, excludedPackages), OverlapFragment.TAG)
                 .commit()

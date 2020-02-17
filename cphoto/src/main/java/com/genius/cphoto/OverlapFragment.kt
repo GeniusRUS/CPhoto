@@ -140,13 +140,8 @@ class OverlapFragment : Fragment() {
      * Обрабатывает новый запрос на картинку
      * В процессе задает с помощью [setArguments] новый тип реквеста [typeRequest]
      */
-    fun newRequest(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?) {
-        arguments = Bundle().apply {
-            putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
-            putParcelable(CRPhoto.RECEIVER_EXTRA, receiver)
-            title?.let { putString(CRPhoto.TITLE_EXTRA, it) }
-        }
-
+    fun newRequest(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?, appPackages: List<String>?) {
+        arguments = packageNewRequestToBundle(typeRequest, receiver, title, appPackages)
         handleIntent()
     }
 
@@ -288,12 +283,20 @@ class OverlapFragment : Fragment() {
 
         fun newInstance(@TypeRequest typeRequest: String, receiver: ResultReceiver, title: String?, appPackages: List<String>?): OverlapFragment {
             return OverlapFragment().apply {
-                arguments = Bundle().apply {
-                    putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
-                    putParcelable(CRPhoto.RECEIVER_EXTRA, receiver)
-                    title?.let { putString(CRPhoto.TITLE_EXTRA, it) }
-                    appPackages?.let { putStringArrayList(CRPhoto.EXCLUDED_PACKAGES_EXTRA, ArrayList(it)) }
-                }
+                arguments = packageNewRequestToBundle(typeRequest, receiver, title, appPackages)
+            }
+        }
+
+        private fun packageNewRequestToBundle(
+            @TypeRequest typeRequest: String,
+            receiver: ResultReceiver,
+            title: String?,
+            appPackages: List<String>?): Bundle {
+            return Bundle().apply {
+                putString(CRPhoto.REQUEST_TYPE_EXTRA, typeRequest)
+                putParcelable(CRPhoto.RECEIVER_EXTRA, receiver)
+                title?.let { putString(CRPhoto.TITLE_EXTRA, it) }
+                appPackages?.let { putStringArrayList(CRPhoto.EXCLUDED_PACKAGES_EXTRA, ArrayList(it)) }
             }
         }
     }
