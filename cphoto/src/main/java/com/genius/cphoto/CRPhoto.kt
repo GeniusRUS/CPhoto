@@ -1,50 +1,39 @@
 package com.genius.cphoto
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.media.ThumbnailUtils
 import android.net.Uri
 import androidx.annotation.StringRes
 import android.util.Pair
 import androidx.annotation.StringDef
-import androidx.fragment.app.FragmentActivity
 import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
-import android.content.ContextWrapper
+import android.media.ThumbnailUtils
 import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.ResultReceiver
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.activity.result.ActivityResultCaller
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Created by Genius on 03.12.2017.
  */
 @Suppress("UNUSED")
-class CRPhoto(private val context: Context) {
+class CRPhoto(private val context: Context, private val caller: ActivityResultCaller) {
 
     private var bitmapSizes: Pair<Int, Int>? = null
     private var publishSubject: CompletableDeferred<*>? = null
     private lateinit var response: String
     private var excludedPackages: List<String>? = null
-    private val receiver: ResultReceiver by lazy {
-        object : ResultReceiver(Handler(context.mainLooper)) {
-            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                if (resultCode == OverlapFragment.SUCCESS_CODE) {
-                    when {
-                        resultData?.containsKey(OverlapFragment.SINGLE_PAYLOAD) == true -> resultData.getParcelable<Uri>(OverlapFragment.SINGLE_PAYLOAD)?.let { propagateResult(it) }
-                        resultData?.containsKey(OverlapFragment.MULTI_PAYLOAD) == true -> resultData.getParcelableArrayList<Uri>(OverlapFragment.MULTI_PAYLOAD)?.let { propagateMultipleResult(it) }
-                    }
-                } else if (resultCode == OverlapFragment.ERROR_CODE) {
-                    val exception = resultData?.getSerializable(OverlapFragment.ERROR_PAYLOAD) as? Exception? ?: return
-                    publishSubject?.completeExceptionally(exception)
-                }
-            }
-        }
-    }
 
     var title: String? = null
         private set
@@ -100,7 +89,7 @@ class CRPhoto(private val context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestBitmap(@TypeRequest typeRequest: String, bitmapSize: Pair<Int, Int>): Bitmap {
         response = BITMAP
-        startOverlapFragment(typeRequest)
+        startJob(typeRequest)
         this.bitmapSizes = bitmapSize
         return CompletableDeferred<Bitmap>().apply {
             publishSubject = this
@@ -116,7 +105,7 @@ class CRPhoto(private val context: Context) {
     @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
     suspend fun requestUri(@TypeRequest typeRequest: String): Uri {
         response = URI
-        startOverlapFragment(typeRequest)
+        startJob(typeRequest)
         return CompletableDeferred<Uri>().apply {
             publishSubject = this
         }.await()
@@ -130,7 +119,7 @@ class CRPhoto(private val context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestPath(@TypeRequest typeRequest: String): String {
         response = PATH
-        startOverlapFragment(typeRequest)
+        startJob(typeRequest)
         return CompletableDeferred<String>().apply {
             publishSubject = this
         }.await()
@@ -144,7 +133,7 @@ class CRPhoto(private val context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestMultiBitmap(bitmapSize: Pair<Int, Int>): List<Bitmap> {
         response = BITMAP
-        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
+        startJob(TypeRequest.COMBINE_MULTIPLE)
         this.bitmapSizes = bitmapSize
         return CompletableDeferred<List<Bitmap>>().apply {
             publishSubject = this
@@ -159,7 +148,7 @@ class CRPhoto(private val context: Context) {
     @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
     suspend fun requestMultiUri(): List<Uri> {
         response = URI
-        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
+        startJob(TypeRequest.COMBINE_MULTIPLE)
         return CompletableDeferred<List<Uri>>().apply {
             publishSubject = this
         }.await()
@@ -172,7 +161,7 @@ class CRPhoto(private val context: Context) {
     @Throws(CancelOperationException::class)
     suspend fun requestMultiPath(): List<String> {
         response = PATH
-        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
+        startJob(TypeRequest.COMBINE_MULTIPLE)
         return CompletableDeferred<List<String>>().apply {
             publishSubject = this
         }.await()
@@ -208,24 +197,40 @@ class CRPhoto(private val context: Context) {
         return this
     }
 
-    /**
-     * Start fragment for action
-     * Calling [OverlapFragment.newInstance] with selected type request and CRPhoto instance
-     * @param typeRequest - selected request
-     */
-    private fun startOverlapFragment(@TypeRequest typeRequest: String) {
-        val activity = findActivityInContext(context)
-        if (activity == null) {
-            publishSubject?.completeExceptionally(ClassCastException("Couldn't find FragmentActivity in attached Context"))
+    @SuppressLint("NewApi")
+    private fun startJob(@TypeRequest typeRequest: String) {
+        if (!hasPermission()) {
+            caller.prepareCall(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) startJob(typeRequest)
+            }.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return
         }
-
-        if (!activity.supportFragmentManager.isStateSaved) {
-            activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
-                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, receiver, title, excludedPackages)
-            } ?: activity.supportFragmentManager.beginTransaction()
-                .add(OverlapFragment.newInstance(typeRequest, receiver, title, excludedPackages), OverlapFragment.TAG)
-                .commit()
+        when (typeRequest) {
+            TypeRequest.CAMERA -> caller.prepareCall(TakePhotoFromCamera(context, createImageUri())) { uri ->
+                uri?.let {
+                    propagateBitmap(it)
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
+            }.launch(null)
+            TypeRequest.COMBINE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, context, excludedPackages)) { uri ->
+                uri?.let {
+                    propagateBitmap(it.first())
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
+            }.launch(false)
+            TypeRequest.COMBINE_MULTIPLE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, context, excludedPackages)) { uri ->
+                uri?.let {
+                    propagateMultipleBitmap(it)
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
+            }.launch(true)
+            TypeRequest.GALLERY -> caller.prepareCall(TakeLocalPhoto()) { uri ->
+                uri?.let {
+                    propagateBitmap(it)
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.GALLERY))
+            }.launch(null)
+            TypeRequest.FROM_DOCUMENT -> caller.prepareCall(TakeDocumentFromSaf()) { uri ->
+                uri?.let {
+                    propagateBitmap(it)
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.FROM_DOCUMENT))
+            }.launch(true)
         }
     }
 
@@ -237,22 +242,6 @@ class CRPhoto(private val context: Context) {
     @Throws(IOException::class)
     private fun getBitmapFromStream(uri: Uri): Bitmap? {
         return CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
-    }
-
-    /**
-     * Try to find the FragmentActivity inside current Context
-     */
-    private fun findActivityInContext(context: Context): FragmentActivity? {
-        if (context is FragmentActivity) return context
-
-        var currentStepContext = context
-        while (currentStepContext is ContextWrapper) {
-            if (currentStepContext is FragmentActivity) {
-                return currentStepContext
-            }
-            currentStepContext = currentStepContext.baseContext
-        }
-        return null
     }
 
     /**
@@ -351,6 +340,21 @@ class CRPhoto(private val context: Context) {
         (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(images)
     }
 
+    private fun hasPermission(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun createImageUri(): Uri? {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()))
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.ImageColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            }
+        }
+        return context.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+    }
+
     companion object {
         private const val BITMAP = "BITMAP"
         private const val URI = "URI"
@@ -397,18 +401,4 @@ annotation class TypeRequest {
 @Suppress("UNUSED")
 infix fun Bitmap.toThumb(resizeValues: Pair<Int, Int>): Bitmap {
     return ThumbnailUtils.extractThumbnail(this, resizeValues.first, resizeValues.second)
-}
-@Suppress("UNUSED")
-suspend infix fun Context.takePhotoPath(@TypeRequest typeRequest: String): String {
-    return CRPhoto(this).requestPath(typeRequest)
-}
-@Suppress("UNUSED")
-suspend infix fun Context.takePhotoBitmap(@TypeRequest typeRequest: String): Bitmap {
-    return CRPhoto(this).requestBitmap(typeRequest)
-}
-
-@Suppress("DEPRECATION")
-@Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made", replaceWith = ReplaceWith("CRPhoto(this).requestPath(typeRequest)", "com.genius.cphoto.CRPhoto"))
-suspend infix fun Context.takePhotoUri(@TypeRequest typeRequest: String): Uri {
-    return CRPhoto(this).requestUri(typeRequest)
 }

@@ -19,11 +19,11 @@ class CustomImageView @JvmOverloads constructor(
 
     fun requestPic(scope: CoroutineScope) = scope.launch {
         try {
-            val bitmap = CRPhoto(context)
-                .titleCombine("Select picture from CustomImageView")
-                .requestBitmap(TypeRequest.COMBINE)
-
-            setImageBitmap(bitmap)
+//            val bitmap = CRPhoto(context, this)
+//                .titleCombine("Select picture from CustomImageView")
+//                .requestBitmap(TypeRequest.COMBINE)
+//
+//            setImageBitmap(bitmap)
         } catch (e: CancelOperationException) {
             Toast.makeText(context, "Operation cancelled", Toast.LENGTH_LONG).show()
         } catch (e: NotPermissionException) {
