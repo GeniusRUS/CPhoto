@@ -25,7 +25,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Created by Genius on 03.12.2017.
+ * @author Genius. 03.12.2017
+ *
+ * @param context - context for resolving strings or bitmap manage
+ * @param caller - a class that can call. Usually, AppCompatFragment or Fragment
  */
 @Suppress("UNUSED")
 class CRPhoto(private val context: Context, private val caller: ActivityResultCaller) {
@@ -206,17 +209,17 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
             return
         }
         when (typeRequest) {
-            TypeRequest.CAMERA -> caller.prepareCall(TakePhotoFromCamera(context, createImageUri())) { uri ->
+            TypeRequest.CAMERA -> caller.prepareCall(TakePhotoFromCamera(createImageUri())) { uri ->
                 uri?.let {
                     propagateBitmap(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
             }.launch(null)
-            TypeRequest.COMBINE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, context, excludedPackages)) { uri ->
+            TypeRequest.COMBINE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
                 uri?.let {
                     propagateBitmap(it.first())
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
             }.launch(false)
-            TypeRequest.COMBINE_MULTIPLE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, context, excludedPackages)) { uri ->
+            TypeRequest.COMBINE_MULTIPLE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
                 uri?.let {
                     propagateMultipleBitmap(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore
 import androidx.activity.result.contract.ActivityResultContract
@@ -15,7 +14,7 @@ import com.genius.cphoto.util.CRUtils
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
 internal class TakeDocumentFromSaf : ActivityResultContract<Boolean?, Uri?>() {
-    override fun createIntent(input: Boolean?): Intent {
+    override fun createIntent(context: Context, input: Boolean?): Intent {
         return Intent(Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
             .putExtra(Intent.EXTRA_LOCAL_ONLY, input ?: true)
@@ -31,7 +30,7 @@ internal class TakeDocumentFromSaf : ActivityResultContract<Boolean?, Uri?>() {
 }
 
 internal class TakeLocalPhoto : ActivityResultContract<Void?, Uri?>() {
-    override fun createIntent(input: Void?): Intent {
+    override fun createIntent(context: Context, input: Void?): Intent {
         return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
     }
 
@@ -43,9 +42,8 @@ internal class TakeLocalPhoto : ActivityResultContract<Void?, Uri?>() {
     }
 }
 
-internal class TakePhotoFromCamera(private val context: Context,
-                                   private val fileUri: Uri?) : ActivityResultContract<Void?, Uri?>() {
-    override fun createIntent(input: Void?): Intent {
+internal class TakePhotoFromCamera(private val fileUri: Uri?) : ActivityResultContract<Void?, Uri?>() {
+    override fun createIntent(context: Context, input: Void?): Intent {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         if (takePictureIntent.resolveActivity(context.packageManager) != null) {
             if (!CRUtils.isExternalStorageWritable()) {
@@ -63,9 +61,8 @@ internal class TakePhotoFromCamera(private val context: Context,
 
 internal class TakeCombineImage(private val fileUri: Uri?,
                                 private val title: String?,
-                                private val context: Context,
                                 private val excludedPackages: List<String>?) : ActivityResultContract<Boolean, List<Uri>>() {
-    override fun createIntent(input: Boolean?): Intent {
+    override fun createIntent(context: Context, input: Boolean?): Intent {
         if (!CRUtils.isExternalStorageWritable()) {
             throw ExternalStorageWriteException()
         }

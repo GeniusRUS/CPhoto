@@ -25,10 +25,6 @@ class OverlapFragment : Fragment() {
     private lateinit var typeRequest: String
     private var receiver: ResultReceiver? = null
 
-    init {
-        retainInstance = true
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleIntent()
