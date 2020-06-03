@@ -203,33 +203,33 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
     @SuppressLint("NewApi")
     private fun startJob(@TypeRequest typeRequest: String) {
         if (!hasPermission()) {
-            caller.prepareCall(ActivityResultContracts.RequestPermission()) { isGranted ->
+            caller.registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) startJob(typeRequest)
             }.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return
         }
         when (typeRequest) {
-            TypeRequest.CAMERA -> caller.prepareCall(TakePhotoFromCamera(createImageUri())) { uri ->
+            TypeRequest.CAMERA -> caller.registerForActivityResult(TakePhotoFromCamera(createImageUri())) { uri ->
                 uri?.let {
                     propagateBitmap(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
             }.launch(null)
-            TypeRequest.COMBINE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
+            TypeRequest.COMBINE -> caller.registerForActivityResult(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
                 uri?.let {
                     propagateBitmap(it.first())
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
             }.launch(false)
-            TypeRequest.COMBINE_MULTIPLE -> caller.prepareCall(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
+            TypeRequest.COMBINE_MULTIPLE -> caller.registerForActivityResult(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
                 uri?.let {
                     propagateMultipleBitmap(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
             }.launch(true)
-            TypeRequest.GALLERY -> caller.prepareCall(TakeLocalPhoto()) { uri ->
+            TypeRequest.GALLERY -> caller.registerForActivityResult(TakeLocalPhoto()) { uri ->
                 uri?.let {
                     propagateBitmap(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.GALLERY))
             }.launch(null)
-            TypeRequest.FROM_DOCUMENT -> caller.prepareCall(TakeDocumentFromSaf()) { uri ->
+            TypeRequest.FROM_DOCUMENT -> caller.registerForActivityResult(TakeDocumentFromSaf()) { uri ->
                 uri?.let {
                     propagateBitmap(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.FROM_DOCUMENT))
