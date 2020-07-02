@@ -28,7 +28,7 @@ import java.util.*
  * @author Genius. 03.12.2017
  *
  * @param context - context for resolving strings or bitmap manage
- * @param caller - a class that can call. Usually, AppCompatFragment or Fragment
+ * @param caller - a class that implements [androidx.activity.result.ActivityResultRegistry] for a call. Usually, AppCompatFragment or Fragment
  */
 @Suppress("UNUSED")
 class CRPhoto(private val context: Context, private val caller: ActivityResultCaller) {
@@ -209,21 +209,32 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
             return
         }
         when (typeRequest) {
-            TypeRequest.CAMERA -> caller.registerForActivityResult(TakePhotoFromCamera(createImageUri())) { uri ->
-                uri?.let {
-                    propagateBitmap(it)
-                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
-            }.launch(null)
-            TypeRequest.COMBINE -> caller.registerForActivityResult(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
-                uri?.let {
-                    propagateBitmap(it.first())
-                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
-            }.launch(false)
-            TypeRequest.COMBINE_MULTIPLE -> caller.registerForActivityResult(TakeCombineImage(createImageUri(), title, excludedPackages)) { uri ->
-                uri?.let {
-                    propagateMultipleBitmap(it)
-                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
-            }.launch(true)
+            TypeRequest.CAMERA -> createImageUri().also {
+                caller.registerForActivityResult(TakePhotoFromCamera(it)) { uri ->
+                    if (uri != null) it?.removeUnusedFile()
+                    uri?.let { nonNullableUri ->
+                        propagateBitmap(nonNullableUri)
+                    } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
+                }.launch(null)
+            }
+            TypeRequest.COMBINE -> createImageUri().also {
+                caller.registerForActivityResult(TakeCombineImage(it, title, excludedPackages)) { uris ->
+                    if (uris.isNullOrEmpty()) it?.removeUnusedFile()
+                    uris?.let { nonNullableUris ->
+                        if (!nonNullableUris.contains(it)) it?.removeUnusedFile()
+                        propagateBitmap(nonNullableUris.first())
+                    } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
+                }.launch(false)
+            }
+            TypeRequest.COMBINE_MULTIPLE -> createImageUri().also {
+                caller.registerForActivityResult(TakeCombineImage(it, title, excludedPackages)) { uris ->
+                    if (uris.isNullOrEmpty()) it?.removeUnusedFile()
+                    uris?.let { nonNullableUris ->
+                        if (!nonNullableUris.contains(it)) it?.removeUnusedFile()
+                        propagateMultipleBitmap(nonNullableUris)
+                    } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
+                }.launch(true)
+            }
             TypeRequest.GALLERY -> caller.registerForActivityResult(TakeLocalPhoto()) { uri ->
                 uri?.let {
                     propagateBitmap(it)
@@ -356,6 +367,13 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
             }
         }
         return context.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+    }
+
+    /**
+     * If we not choose camera, temp file is unused and must be removed
+     */
+    private fun Uri.removeUnusedFile() {
+        context.contentResolver?.delete(this, null, null) != 0
     }
 
     companion object {

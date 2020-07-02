@@ -22,10 +22,7 @@ internal class TakeDocumentFromSaf : ActivityResultContract<Boolean?, Uri?>() {
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-        return if (resultCode != Activity.RESULT_OK)
-            throw CancelOperationException(TypeRequest.FROM_DOCUMENT)
-        else
-            intent?.data
+        return if (Activity.RESULT_OK == resultCode) intent?.data else null
     }
 }
 
@@ -35,10 +32,7 @@ internal class TakeLocalPhoto : ActivityResultContract<Void?, Uri?>() {
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-        return if (resultCode != Activity.RESULT_OK)
-            throw CancelOperationException(TypeRequest.GALLERY)
-        else
-            intent?.data
+        return if (Activity.RESULT_OK == resultCode) intent?.data else null
     }
 }
 
@@ -55,13 +49,13 @@ internal class TakePhotoFromCamera(private val fileUri: Uri?) : ActivityResultCo
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-        return if (resultCode == Activity.RESULT_OK) fileUri else null
+        return if (Activity.RESULT_OK == resultCode) fileUri else null
     }
 }
 
 internal class TakeCombineImage(private val fileUri: Uri?,
                                 private val title: String?,
-                                private val excludedPackages: List<String>?) : ActivityResultContract<Boolean, List<Uri>>() {
+                                private val excludedPackages: List<String>?) : ActivityResultContract<Boolean, List<Uri>?>() {
     override fun createIntent(context: Context, input: Boolean?): Intent {
         if (!CRUtils.isExternalStorageWritable()) {
             throw ExternalStorageWriteException()
@@ -81,18 +75,20 @@ internal class TakeCombineImage(private val fileUri: Uri?,
         }
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
-        return if (intent != null && intent.clipData != null) {
-            intent.clipData?.let { clipData ->
-                val uris = (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
-                ArrayList(uris)
-            } ?: listOf()
+    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri>? {
+        return if (Activity.RESULT_OK == resultCode) {
+            if (intent != null && intent.clipData != null) {
+                intent.clipData?.let { clipData ->
+                    val uris = (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
+                    ArrayList(uris)
+                } ?: listOf()
 //            removeUnusedFile()
-        } else if (intent?.data != null) {
-            intent.data?.let { uri ->
-                arrayListOf(uri)
-            } ?: listOf()
+            } else if (intent?.data != null) {
+                intent.data?.let { uri ->
+                    arrayListOf(uri)
+                } ?: listOf()
 //            removeUnusedFile()
-        } else fileUri?.let { listOf(it) } ?: listOf()
+            } else fileUri?.let { listOf(it) } ?: listOf()
+        } else null
     }
 }

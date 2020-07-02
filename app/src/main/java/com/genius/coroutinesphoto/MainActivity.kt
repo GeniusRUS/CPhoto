@@ -109,6 +109,5 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     private fun clear() {
         image.setImageBitmap(null)
-        thumbs.removeAllViews()
     }
 }
