@@ -209,9 +209,9 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
             return
         }
         when (typeRequest) {
-            TypeRequest.CAMERA -> createImageUri().also {
-                caller.registerForActivityResult(TakePhotoFromCamera(it)) { uri ->
-                    if (uri != null) it?.removeUnusedFile()
+            TypeRequest.CAMERA -> createImageUri().also { createdUri ->
+                caller.registerForActivityResult(TakePhotoFromCamera(createdUri)) { uri ->
+                    if (uri == null) createdUri?.removeUnusedFile()
                     uri?.let { nonNullableUri ->
                         propagateBitmap(nonNullableUri)
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))

@@ -94,9 +94,14 @@ public class CRFileUtils {
                                        @Nullable String[] selectionArgs) {
 
         Cursor cursor = null;
-        final String column = "_data";
+        final String column;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            column = MediaStore.MediaColumns.RELATIVE_PATH;
+        } else {
+            column = MediaStore.MediaColumns.DATA;
+        }
         final String[] projection = {
-                column
+            column
         };
 
         try {

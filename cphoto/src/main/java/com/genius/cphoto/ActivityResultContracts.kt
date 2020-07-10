@@ -29,6 +29,7 @@ internal class TakeDocumentFromSaf : ActivityResultContract<Boolean?, Uri?>() {
 internal class TakeLocalPhoto : ActivityResultContract<Void?, Uri?>() {
     override fun createIntent(context: Context, input: Void?): Intent {
         return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
@@ -39,13 +40,13 @@ internal class TakeLocalPhoto : ActivityResultContract<Void?, Uri?>() {
 internal class TakePhotoFromCamera(private val fileUri: Uri?) : ActivityResultContract<Void?, Uri?>() {
     override fun createIntent(context: Context, input: Void?): Intent {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            .putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
         if (takePictureIntent.resolveActivity(context.packageManager) != null) {
             if (!CRUtils.isExternalStorageWritable()) {
                 throw ExternalStorageWriteException()
             }
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
         } else throw ActivityNotFoundException()
-        return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        return takePictureIntent
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
@@ -63,6 +64,7 @@ internal class TakeCombineImage(private val fileUri: Uri?,
 
         var intentList: MutableList<Intent> = ArrayList()
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, input)
         }
@@ -82,12 +84,10 @@ internal class TakeCombineImage(private val fileUri: Uri?,
                     val uris = (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
                     ArrayList(uris)
                 } ?: listOf()
-//            removeUnusedFile()
             } else if (intent?.data != null) {
                 intent.data?.let { uri ->
                     arrayListOf(uri)
                 } ?: listOf()
-//            removeUnusedFile()
             } else fileUri?.let { listOf(it) } ?: listOf()
         } else null
     }
