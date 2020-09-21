@@ -2,25 +2,23 @@ package com.genius.cphoto
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.net.Uri
-import androidx.annotation.StringRes
-import android.util.Pair
-import androidx.annotation.StringDef
-import com.genius.cphoto.util.CRFileUtils
-import com.genius.cphoto.util.CRUtils
-import kotlinx.coroutines.CompletableDeferred
-import java.io.IOException
 import android.media.ThumbnailUtils
+import android.net.Uri
 import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
+import android.util.Pair
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.annotation.StringDef
+import androidx.annotation.StringRes
+import androidx.annotation.WorkerThread
+import com.genius.cphoto.util.CRFileUtils
+import com.genius.cphoto.util.CRUtils
+import kotlinx.coroutines.CompletableDeferred
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -101,11 +99,11 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for single uri
+     * *NOTE* Google Photo Content Provider forbids the use of it URI in other contexts, in addition, from which the call was made
      * @param typeRequest - selected source for emitter
      * @return - observable that emits a single uri
      */
     @Throws(CancelOperationException::class)
-    @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
     suspend fun requestUri(@TypeRequest typeRequest: String): Uri {
         response = URI
         startJob(typeRequest)
@@ -145,10 +143,10 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for list of uris
+     * *NOTE* Google Photo Content Provider forbids the use of it URI in other contexts, in addition, from which the call was made
      * @return - observable that emits a list of uris
      */
     @Throws(CancelOperationException::class)
-    @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
     suspend fun requestMultiUri(): List<Uri> {
         response = URI
         startJob(TypeRequest.COMBINE_MULTIPLE)
@@ -209,65 +207,59 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
             return
         }
         when (typeRequest) {
-            TypeRequest.CAMERA -> createImageUri().also { createdUri ->
-                caller.registerForActivityResult(TakePhotoFromCamera(createdUri)) { uri ->
-                    if (uri == null) createdUri?.removeUnusedFile()
-                    uri?.let { nonNullableUri ->
-                        propagateBitmap(nonNullableUri)
-                    } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
-                }.launch(null)
+            TypeRequest.CAMERA -> createImageUriNew().also { createdUri ->
+                caller.registerForActivityResult(TakePhotoFromCamera()) { isSuccess ->
+                    if (isSuccess) {
+                        propagateResult(createdUri!!)
+                    } else {
+                        publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
+                    }
+                }.launch(createdUri)
             }
-            TypeRequest.COMBINE -> createImageUri().also {
+            TypeRequest.COMBINE -> createImageUriNew().also {
                 caller.registerForActivityResult(TakeCombineImage(it, title, excludedPackages)) { uris ->
-                    if (uris.isNullOrEmpty()) it?.removeUnusedFile()
                     uris?.let { nonNullableUris ->
-                        if (!nonNullableUris.contains(it)) it?.removeUnusedFile()
-                        propagateBitmap(nonNullableUris.first())
+                        propagateResult(nonNullableUris.first())
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
                 }.launch(false)
             }
-            TypeRequest.COMBINE_MULTIPLE -> createImageUri().also {
+            TypeRequest.COMBINE_MULTIPLE -> createImageUriNew().also {
                 caller.registerForActivityResult(TakeCombineImage(it, title, excludedPackages)) { uris ->
-                    if (uris.isNullOrEmpty()) it?.removeUnusedFile()
                     uris?.let { nonNullableUris ->
-                        if (!nonNullableUris.contains(it)) it?.removeUnusedFile()
-                        propagateMultipleBitmap(nonNullableUris)
+                        propagateMultipleResult(nonNullableUris)
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
                 }.launch(true)
             }
             TypeRequest.GALLERY -> caller.registerForActivityResult(TakeLocalPhoto()) { uri ->
                 uri?.let {
-                    propagateBitmap(it)
+                    propagateResult(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.GALLERY))
             }.launch(null)
             TypeRequest.FROM_DOCUMENT -> caller.registerForActivityResult(TakeDocumentFromSaf()) { uri ->
                 uri?.let {
-                    propagateBitmap(it)
+                    propagateResult(it)
                 } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.FROM_DOCUMENT))
             }.launch(true)
         }
     }
 
     /**
-     * Get the bitmap from the source by URI
-     * @param uri - uri source
-     * @return image in bitmap
-     */
-    @Throws(IOException::class)
-    private fun getBitmapFromStream(uri: Uri): Bitmap? {
-        return CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
-    }
-
-    /**
      * Handle result from fragment
      * @param uri - uri-result
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateResult(uri: Uri) {
         try {
             when (response) {
-                BITMAP -> propagateBitmap(uri)
-                URI -> propagateUri(uri)
-                PATH -> propagatePath(uri)
+                URI -> (publishSubject as? CompletableDeferred<Uri>)?.complete(uri)
+                BITMAP -> CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second).let {
+                    (publishSubject as? CompletableDeferred<Bitmap>)?.complete(it)
+                }
+                PATH -> CRFileUtils.getPath(context, uri)?.let {
+                    (publishSubject as? CompletableDeferred<String>)?.complete(it)
+                } ?: (publishSubject as? CompletableDeferred<String>)?.completeExceptionally(
+                    NullPointerException("Cannot recover image for URI: $uri. Please ensure that file is in local storage")
+                )
             }
         } catch (e: Exception) {
             publishSubject?.completeExceptionally(e)
@@ -278,102 +270,36 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * Handle multiple result from fragment
      * @param uris - uris items from fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateMultipleResult(uris: List<Uri>) {
         try {
             when (response) {
-                BITMAP -> propagateMultipleBitmap(uris)
-                URI -> propagateMultipleUri(uris)
-                PATH -> propagateMultiplePaths(uris)
+                URI -> (publishSubject as? CompletableDeferred<List<Uri>>)?.complete(uris)
+                BITMAP -> {
+                    uris.map { item -> CRUtils.getBitmap(context, item, bitmapSizes?.first, bitmapSizes?.second) }.apply {
+                        (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(this)
+                    }
+                }
+                PATH -> {
+                    (publishSubject as? CompletableDeferred<List<String>>)?.let { continuation ->
+                        continuation.complete(uris.mapNotNull { uri -> CRFileUtils.getPath(context, uri) })
+                    }
+                }
             }
         } catch (e: Exception) {
             publishSubject?.completeExceptionally(e)
         }
-    }
-
-    /**
-     * Handle single result from fragment
-     * @param uri - uri item from fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateUri(uri: Uri) {
-        (publishSubject as? CompletableDeferred<Uri>)?.complete(uri)
-    }
-
-    /**
-     * Handle single result from fragment
-     * @param uri - uri item from fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagatePath(uri: Uri) {
-        CRFileUtils.getPath(context, uri)?.let {
-            (publishSubject as? CompletableDeferred<String>)?.complete(it)
-        } ?: (publishSubject as? CompletableDeferred<String>)?.completeExceptionally(
-            NullPointerException("Cannot recover image for URI: $uri")
-        )
-    }
-
-    /**
-     * Handle multiple result from fragment
-     * @param uris - uris items from fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateMultipleUri(uris: List<Uri>) {
-        (publishSubject as? CompletableDeferred<List<Uri>>)?.complete(uris)
-    }
-
-    /**
-     * Handle result list of paths from fragment
-     * @param uris - uris of path image fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateMultiplePaths(uris: List<Uri>) {
-        (publishSubject as? CompletableDeferred<List<String>>)?.let { continuation ->
-            continuation.complete(uris.mapNotNull { uri -> CRFileUtils.getPath(context, uri) })
-        }
-    }
-
-    /**
-     * Handle single result bitmap from fragment
-     * @param uriBitmap - uri for bitmap image fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateBitmap(uriBitmap: Uri) {
-        getBitmapFromStream(uriBitmap)?.let {
-            (publishSubject as? CompletableDeferred<Bitmap>)?.complete(it)
-        } ?: publishSubject?.completeExceptionally(IllegalStateException("Bitmap is null"))
-
-    }
-
-    /**
-     * Handle result list of bitmaps from fragment
-     * @param uris - uris of bitmap image fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateMultipleBitmap(uris: List<Uri>) {
-        val images = uris.mapNotNull { item -> getBitmapFromStream(item) }
-        (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(images)
     }
 
     private fun hasPermission(): Boolean {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun createImageUri(): Uri? {
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.TITLE, SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()))
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.ImageColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-            }
-        }
-        return context.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-    }
-
-    /**
-     * If we not choose camera, temp file is unused and must be removed
-     */
-    private fun Uri.removeUnusedFile() {
-        context.contentResolver?.delete(this, null, null) != 0
+    private fun createImageUriNew(): Uri? {
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val file = File(context.externalCacheDir,
+            "$timeStamp.jpg")
+        return Uri.fromFile(file)
     }
 
     companion object {
@@ -423,3 +349,11 @@ annotation class TypeRequest {
 infix fun Bitmap.toThumb(resizeValues: Pair<Int, Int>): Bitmap {
     return ThumbnailUtils.extractThumbnail(this, resizeValues.first, resizeValues.second)
 }
+
+@Suppress("UNUSED")
+@WorkerThread
+fun Uri.toAbsolutePath(context: Context): String? = CRFileUtils.getPath(context, this)
+
+@Suppress("UNUSED")
+@WorkerThread
+fun Uri.toBitmap(context: Context, width: Int? = null, height: Int? = null): Bitmap = CRUtils.getBitmap(context, this, width, height)

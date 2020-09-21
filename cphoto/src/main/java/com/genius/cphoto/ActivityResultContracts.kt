@@ -37,10 +37,10 @@ internal class TakeLocalPhoto : ActivityResultContract<Void?, Uri?>() {
     }
 }
 
-internal class TakePhotoFromCamera(private val fileUri: Uri?) : ActivityResultContract<Void?, Uri?>() {
-    override fun createIntent(context: Context, input: Void?): Intent {
+internal class TakePhotoFromCamera : ActivityResultContract<Uri?, Boolean>() {
+    override fun createIntent(context: Context, input: Uri?): Intent {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            .putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
+            .putExtra(MediaStore.EXTRA_OUTPUT, input)
         if (takePictureIntent.resolveActivity(context.packageManager) != null) {
             if (!CRUtils.isExternalStorageWritable()) {
                 throw ExternalStorageWriteException()
@@ -49,8 +49,8 @@ internal class TakePhotoFromCamera(private val fileUri: Uri?) : ActivityResultCo
         return takePictureIntent
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-        return if (Activity.RESULT_OK == resultCode) fileUri else null
+    override fun parseResult(resultCode: Int, intent: Intent?): Boolean {
+        return Activity.RESULT_OK == resultCode
     }
 }
 

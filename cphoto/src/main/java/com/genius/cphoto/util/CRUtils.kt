@@ -22,11 +22,11 @@ class CRUtils {
     companion object {
 
         @Throws(IOException::class)
-        private fun modifyOrientation(bitmap: Bitmap?, absolutePath: String?, fileDescriptor: FileDescriptor? = null): Bitmap {
+        private fun modifyOrientation(bitmap: Bitmap?, localFilePath: String?, externalFileDescriptor: FileDescriptor? = null): Bitmap {
             val ei = when {
                 bitmap == null -> throw IllegalStateException("Decoded bitmap is null")
-                !absolutePath.isNullOrEmpty() -> ExifInterface(absolutePath)
-                fileDescriptor != null -> ExifInterface(fileDescriptor)
+                !localFilePath.isNullOrEmpty() -> ExifInterface(localFilePath)
+                externalFileDescriptor != null -> ExifInterface(externalFileDescriptor)
                 else -> throw IllegalStateException("Sources is null")
             }
 
