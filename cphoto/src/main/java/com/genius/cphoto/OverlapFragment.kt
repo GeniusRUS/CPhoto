@@ -10,8 +10,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import com.genius.cphoto.util.CRUtils
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -72,8 +74,6 @@ class OverlapFragment : Fragment() {
                             }
                         )
                     }
-
-                    removeUnusedFile()
                 } else if (data?.data != null) {
                     data.data?.let { uri ->
                         receiver?.send(SUCCESS_CODE,
@@ -82,8 +82,6 @@ class OverlapFragment : Fragment() {
                             }
                         )
                     }
-
-                    removeUnusedFile()
                 } else if (fileUri != null) {
                     fileUri?.let { uri ->
                         receiver?.send(SUCCESS_CODE,
@@ -110,7 +108,6 @@ class OverlapFragment : Fragment() {
                             putParcelable(SINGLE_PAYLOAD, data.data)
                         }
                     )
-                    removeUnusedFile()
                 } else {
                     receiver?.send(SUCCESS_CODE,
                         Bundle().apply {
@@ -132,7 +129,6 @@ class OverlapFragment : Fragment() {
                     putSerializable(ERROR_PAYLOAD, CancelOperationException(typeRequest))
                 }
             )
-            removeUnusedFile()
         }
     }
 
@@ -185,17 +181,20 @@ class OverlapFragment : Fragment() {
         fileUri = createImageUri()
         var intentList: MutableList<Intent> = ArrayList()
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, isMultiple)
         }
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, pickIntent, arguments?.getStringArrayList(CRPhoto.EXCLUDED_PACKAGES_EXTRA))
         val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             .putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intentList = CRUtils.addIntentsToList(requireContext(), intentList, takePhotoIntent)
         val chooserIntent = if (intentList.isNotEmpty()) {
             val title = arguments?.getString(CRPhoto.TITLE_EXTRA)
             Intent.createChooser(intentList.removeAt(intentList.size - 1), title).apply {
                 putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray<Parcelable>())
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         } else null
 
@@ -208,7 +207,6 @@ class OverlapFragment : Fragment() {
         } ?: receiver?.send(ERROR_CODE,
             Bundle().apply {
                 putSerializable(ERROR_PAYLOAD, ActivityNotFoundException())
-                removeUnusedFile()
             }
         )
     }
@@ -249,26 +247,11 @@ class OverlapFragment : Fragment() {
         }
     }
 
-    /**
-     * If we not choose camera, temp file is unused and must be removed
-     */
-    private fun removeUnusedFile() {
-        fileUri?.let {
-            if (context?.contentResolver?.delete(it, null, null) != 0) {
-                fileUri = null
-            }
-        }
-    }
-
     private fun createImageUri(): Uri? {
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.TITLE, SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()))
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.ImageColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-            }
-        }
-        return context?.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val file = File(context?.cacheDir,
+            "$timeStamp.jpg")
+        return FileProvider.getUriForFile(context ?: return null,"${BuildConfig.LIBRARY_PACKAGE_NAME}.fileprovider",file);
     }
 
     companion object {
