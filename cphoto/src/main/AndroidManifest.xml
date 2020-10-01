@@ -7,7 +7,7 @@
     <application>
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.genius.cphoto.fileprovider"
+            android:authorities="${applicationId}.cphoto.fileprovider"
             android:grantUriPermissions="true"
             android:exported="false">
             <meta-data

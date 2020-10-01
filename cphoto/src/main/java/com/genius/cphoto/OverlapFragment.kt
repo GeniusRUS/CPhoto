@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
-import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -251,7 +250,7 @@ class OverlapFragment : Fragment() {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val file = File(context?.cacheDir,
             "$timeStamp.jpg")
-        return FileProvider.getUriForFile(context ?: return null,"${BuildConfig.LIBRARY_PACKAGE_NAME}.fileprovider",file);
+        return FileProvider.getUriForFile(context ?: return null,"${context?.packageName}.cphoto.fileprovider", file)
     }
 
     companion object {
