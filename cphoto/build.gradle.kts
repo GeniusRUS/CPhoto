@@ -43,15 +43,15 @@ android {
 }
 
 val verCoroutines = "1.3.9"
-val verActivity = "1.2.0-alpha08"
-val varFragment = "1.3.0-alpha08"
+val verActivity = "1.2.0-beta01"
+val varFragment = "1.3.0-beta01"
 
 dependencies {
-    testImplementation("junit:junit:4.13")
+    testImplementation("junit:junit:4.13.1")
     androidTestImplementation("androidx.test:runner:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
     compileOnly("androidx.appcompat:appcompat:1.2.0")
-    implementation("androidx.exifinterface:exifinterface:1.3.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.1")
     implementation("androidx.annotation:annotation:1.1.0")
     implementation(kotlin("stdlib-jdk7", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$verCoroutines")
