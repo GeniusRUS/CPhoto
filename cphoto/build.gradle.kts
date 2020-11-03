@@ -42,7 +42,7 @@ android {
     }
 }
 
-val verCoroutines = "1.3.9"
+val verCoroutines = "1.4.0"
 val verActivity = "1.2.0-beta01"
 val varFragment = "1.3.0-beta01"
 

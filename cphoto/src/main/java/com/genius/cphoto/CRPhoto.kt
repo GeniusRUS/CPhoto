@@ -15,6 +15,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.StringDef
 import androidx.annotation.StringRes
 import androidx.annotation.WorkerThread
+import androidx.core.content.FileProvider
 import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
@@ -207,28 +208,28 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
             return
         }
         when (typeRequest) {
-            TypeRequest.CAMERA -> createImageUriNew().also { createdUri ->
-                caller.registerForActivityResult(TakePhotoFromCamera()) { isSuccess ->
-                    if (isSuccess) {
-                        propagateResult(createdUri!!)
+            TypeRequest.CAMERA -> context.createImageUriNew().also { createdUri ->
+                caller.registerForActivityResult(TakePhotoFromCamera()) { result ->
+                    if (result != null) {
+                        propagateResult(result)
                     } else {
                         publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
                     }
                 }.launch(createdUri)
             }
-            TypeRequest.COMBINE -> createImageUriNew().also {
-                caller.registerForActivityResult(TakeCombineImage(it, title, excludedPackages)) { uris ->
+            TypeRequest.COMBINE -> context.createImageUriNew().also {
+                caller.registerForActivityResult(TakeCombineImage(false, title, excludedPackages)) { uris ->
                     uris?.let { nonNullableUris ->
                         propagateResult(nonNullableUris.first())
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
-                }.launch(false)
+                }.launch(it)
             }
-            TypeRequest.COMBINE_MULTIPLE -> createImageUriNew().also {
-                caller.registerForActivityResult(TakeCombineImage(it, title, excludedPackages)) { uris ->
+            TypeRequest.COMBINE_MULTIPLE -> context.createImageUriNew().also {
+                caller.registerForActivityResult(TakeCombineImage(true, title, excludedPackages)) { uris ->
                     uris?.let { nonNullableUris ->
                         propagateMultipleResult(nonNullableUris)
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
-                }.launch(true)
+                }.launch(it)
             }
             TypeRequest.GALLERY -> caller.registerForActivityResult(TakeLocalPhoto()) { uri ->
                 uri?.let {
@@ -295,13 +296,6 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun createImageUriNew(): Uri? {
-        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val file = File(context.externalCacheDir,
-            "$timeStamp.jpg")
-        return Uri.fromFile(file)
-    }
-
     companion object {
         private const val BITMAP = "BITMAP"
         private const val URI = "URI"
@@ -338,6 +332,12 @@ annotation class TypeRequest {
         @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         const val FROM_DOCUMENT = "FROM_DOCUMENT"
     }
+}
+
+fun Context.createImageUriNew(): Uri? {
+    val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val file = File(cacheDir, "$timeStamp.jpg")
+    return FileProvider.getUriForFile(this,"${packageName}.cphoto.fileprovider", file)
 }
 
 /**
