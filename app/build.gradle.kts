@@ -34,7 +34,7 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation (kotlin("stdlib-jdk7", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
     implementation ("androidx.appcompat:appcompat:1.2.0")
-    implementation ("androidx.constraintlayout:constraintlayout:2.0.3")
+    implementation ("androidx.constraintlayout:constraintlayout:2.0.4")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:$verCoroutines")
     implementation(project(":cphoto"))
     testImplementation ("junit:junit:4.13.1")

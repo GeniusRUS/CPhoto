@@ -40,9 +40,13 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    buildFeatures {
+        buildConfig = false
+    }
 }
 
-val verCoroutines = "1.4.0"
+val verCoroutines = "1.4.1"
 val verActivity = "1.2.0-beta01"
 val varFragment = "1.3.0-beta01"
 
