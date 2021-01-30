@@ -1,7 +1,6 @@
 package com.genius.coroutinesphoto
 
 import android.os.Bundle
-import android.os.StrictMode
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 
