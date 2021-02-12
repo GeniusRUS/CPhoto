@@ -29,8 +29,8 @@ android {
 }
 
 val verCoroutines = "1.4.2"
-val verActivity = "1.2.0-rc02"
-val varFragment = "1.3.0-rc02"
+val verActivity = "1.2.0"
+val varFragment = "1.3.0"
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))

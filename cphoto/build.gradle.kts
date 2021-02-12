@@ -15,7 +15,7 @@ android {
         minSdkVersion(16)
         targetSdkVersion(30)
         versionCode = 1
-        versionName = "3.0.0-rc1"
+        versionName = "3.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -32,8 +32,8 @@ android {
 }
 
 val verCoroutines = "1.4.2"
-val verActivity = "1.2.0-rc02"
-val varFragment = "1.3.0-rc02"
+val verActivity = "1.2.0"
+val varFragment = "1.3.0"
 
 dependencies {
     testImplementation("junit:junit:4.13.1")
