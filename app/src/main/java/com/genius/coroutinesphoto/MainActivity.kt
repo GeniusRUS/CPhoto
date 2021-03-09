@@ -1,6 +1,8 @@
 package com.genius.coroutinesphoto
 
 import android.os.Bundle
+import android.widget.Button
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 
@@ -9,9 +11,15 @@ import com.genius.cphoto.TakeDocumentFromSaf
 import com.genius.cphoto.TakeLocalPhoto
 import com.genius.cphoto.TakePhotoFromCamera
 import com.genius.cphoto.createImageUriNew
-import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
+
+    private lateinit var image: ImageView
+    private lateinit var gallery: Button
+    private lateinit var camera: Button
+    private lateinit var combine: Button
+    private lateinit var combineMultiple: Button
+    private lateinit var document: Button
 
     private val takeLocalPhoto = registerForActivityResult(TakeLocalPhoto()) { result ->
         result?.let { imageUri ->
@@ -48,20 +56,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        /*StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder()
-                .detectDiskReads()
-                .detectDiskWrites()
-                .detectNetwork()
-                .penaltyLog()
-                .build()
-        )
-        StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder()
-                .detectAll()
-                .penaltyLog()
-                .build()
-        )*/
+        image = findViewById(R.id.image)
+        gallery = findViewById(R.id.gallery)
+        camera = findViewById(R.id.camera)
+        combine = findViewById(R.id.combine)
+        combineMultiple = findViewById(R.id.combine_multiple)
+        document = findViewById(R.id.document)
 
         gallery.setOnClickListener {
             clear()
@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             combineTakePhoto.launch(createImageUriNew())
         }
 
-        combine_multiple.setOnClickListener {
+        combineMultiple.setOnClickListener {
             clear()
             combineMultipleTakePhoto.launch(createImageUriNew())
         }

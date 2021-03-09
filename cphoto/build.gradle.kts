@@ -1,11 +1,26 @@
-import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 
+buildscript {
+    repositories {
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        }
+    }
+    dependencies {
+        classpath("com.vanniktech:gradle-maven-publish-plugin:0.14.2")
+    }
+}
+
+apply(plugin = "com.vanniktech.maven.publish")
+
 plugins {
-    id("com.jfrog.bintray")
-    id("maven-publish")
     id("com.android.library")
     kotlin("android")
+    id("org.jetbrains.dokka")
+}
+
+tasks.dokkaJavadoc.configure {
+    outputDirectory.set(buildDir.resolve("javadoc"))
 }
 
 android {
@@ -31,12 +46,12 @@ android {
     }
 }
 
-val verCoroutines = "1.4.2"
+val verCoroutines = "1.4.3"
 val verActivity = "1.2.0"
 val varFragment = "1.3.0"
 
 dependencies {
-    testImplementation("junit:junit:4.13.1")
+    testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test:runner:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
     compileOnly("androidx.appcompat:appcompat:1.2.0")
@@ -48,84 +63,4 @@ dependencies {
     implementation("androidx.activity:activity-ktx:$verActivity")
     implementation("androidx.fragment:fragment:$varFragment")
     implementation("androidx.fragment:fragment-ktx:$varFragment")
-}
-
-group = "com.geniusrus.cphoto"
-version = android.defaultConfig.versionName.toString()
-
-tasks {
-    register("androidSourcesJar", Jar::class) {
-        archiveClassifier.set("sources")
-        from(android.sourceSets.getByName("main").java.srcDirs)
-    }
-}
-
-publishing {
-    publications {
-        register<MavenPublication>("CPhotoLibrary") {
-            artifactId = "cphoto"
-
-            afterEvaluate { artifact(tasks.getByName("bundleReleaseAar")) }
-            artifact(tasks.getByName("androidSourcesJar"))
-
-            pom {
-                name.set("CPhoto")
-                description.set("Android take photo library on coroutines")
-                url.set("https://github.com/GeniusRUS/CPhoto")
-
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("GeniusRUS")
-                        name.set("Viktor Likhanov")
-                        email.set("Gen1usRUS@yandex.ru")
-                    }
-                }
-                scm {
-                    connection.set("git://github.com/GeniusRUS/CPhoto.git")
-                    developerConnection.set("git://github.com/GeniusRUS/CPhoto.git")
-                    url.set("https://github.com/GeniusRUS/CPhoto")
-                }
-
-                // Saving external dependencies list into .pom-file
-                withXml {
-                    fun groovy.util.Node.addDependency(dependency: Dependency, scope: String) {
-                        appendNode("dependency").apply {
-                            appendNode("groupId", dependency.group)
-                            appendNode("artifactId", dependency.name)
-                            appendNode("version", dependency.version)
-                            appendNode("scope", scope)
-                        }
-                    }
-
-                    asNode().appendNode("dependencies").let { dependencies ->
-                        // List all "api" dependencies as "compile" dependencies
-                        configurations.api.get().allDependencies.forEach {
-                            dependencies.addDependency(it, "compile")
-                        }
-                        // List all "implementation" dependencies as "runtime" dependencies
-                        configurations.implementation.get().allDependencies.forEach {
-                            dependencies.addDependency(it, "runtime")
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            name = "bintray"
-            credentials {
-                username = gradleLocalProperties(rootDir).getProperty("bintray.user")
-                password = gradleLocalProperties(rootDir).getProperty("bintray.apikey")
-            }
-            url = uri("https://api.bintray.com/maven/geniusrus/CPhoto/$group/;publish=1")
-        }
-    }
 }

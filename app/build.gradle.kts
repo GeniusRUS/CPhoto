@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("kotlin-android-extensions")
 }
 
 android {
@@ -28,7 +27,7 @@ android {
     }
 }
 
-val verCoroutines = "1.4.2"
+val verCoroutines = "1.4.3"
 val verActivity = "1.2.0"
 val varFragment = "1.3.0"
 
@@ -43,7 +42,7 @@ dependencies {
     implementation("androidx.fragment:fragment:$varFragment")
     implementation("androidx.fragment:fragment-ktx:$varFragment")
     implementation(project(":cphoto"))
-    testImplementation ("junit:junit:4.13.1")
+    testImplementation ("junit:junit:4.13.2")
     androidTestImplementation ("androidx.test:runner:1.3.0")
     androidTestImplementation ("androidx.test.espresso:espresso-core:3.3.0")
 }

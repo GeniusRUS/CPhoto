@@ -30,6 +30,7 @@ import java.util.*
  * @param caller - a class that implements [androidx.activity.result.ActivityResultRegistry] for a call. Usually, AppCompatFragment or Fragment
  */
 @Suppress("UNUSED")
+@Deprecated("Please use ActivityResultApi")
 class CRPhoto(private val context: Context, private val caller: ActivityResultCaller) {
 
     private var bitmapSizes: Pair<Int, Int>? = null
@@ -46,6 +47,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits bitmaps
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestBitmap(@TypeRequest typeRequest: String): Bitmap {
         return requestBitmap(typeRequest, Pair(IMAGE_SIZE, IMAGE_SIZE))
     }
@@ -58,6 +65,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits single bitmap
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestBitmap(@TypeRequest typeRequest: String, width: Int, height: Int): Bitmap {
         return requestBitmap(typeRequest, Pair(width, height))
     }
@@ -67,6 +80,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable tah emits list of scaled bitmaps
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiBitmap(): List<Bitmap> {
         return requestMultiBitmap(Pair(IMAGE_SIZE, IMAGE_SIZE))
     }
@@ -78,6 +97,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits list of bitmaps
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiBitmap(width: Int, height: Int): List<Bitmap> {
         return requestMultiBitmap(Pair(width, height))
     }
@@ -89,6 +114,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestBitmap(@TypeRequest typeRequest: String, bitmapSize: Pair<Int, Int>): Bitmap {
         response = BITMAP
         startJob(typeRequest)
@@ -105,6 +136,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits a single uri
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestUri(@TypeRequest typeRequest: String): Uri {
         response = URI
         startJob(typeRequest)
@@ -119,6 +156,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits a single path
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestPath(@TypeRequest typeRequest: String): String {
         response = PATH
         startJob(typeRequest)
@@ -133,6 +176,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiBitmap(bitmapSize: Pair<Int, Int>): List<Bitmap> {
         response = BITMAP
         startJob(TypeRequest.COMBINE_MULTIPLE)
@@ -148,6 +197,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits a list of uris
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiUri(): List<Uri> {
         response = URI
         startJob(TypeRequest.COMBINE_MULTIPLE)
@@ -161,6 +216,12 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
      * @return - observable that emits a list of paths
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiPath(): List<String> {
         response = PATH
         startJob(TypeRequest.COMBINE_MULTIPLE)

@@ -58,7 +58,7 @@ class TakePhotoFromCamera : ActivityResultContract<Uri?, Uri?>() {
 
 class TakeCombineImage(
     private val isMultiple: Boolean = false,
-    private val title: String?,
+    private val title: String? = null,
     private val excludedPackages: List<String>? = null
 ) : ActivityResultContract<Uri, List<Uri>?>() {
     private var fileUri: Uri? = null
