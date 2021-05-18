@@ -27,9 +27,9 @@ android {
     }
 }
 
-val verCoroutines = "1.4.3"
-val verActivity = "1.2.0"
-val varFragment = "1.3.0"
+val verCoroutines = "1.5.0"
+val verActivity = "1.2.3"
+val varFragment = "1.3.3"
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))

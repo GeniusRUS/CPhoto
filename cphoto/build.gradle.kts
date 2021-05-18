@@ -7,7 +7,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath("com.vanniktech:gradle-maven-publish-plugin:0.14.2")
+        classpath("com.vanniktech:gradle-maven-publish-plugin:0.15.1")
     }
 }
 
@@ -46,9 +46,9 @@ android {
     }
 }
 
-val verCoroutines = "1.4.3"
-val verActivity = "1.2.2"
-val varFragment = "1.3.2"
+val verCoroutines = "1.5.0"
+val verActivity = "1.2.3"
+val varFragment = "1.3.3"
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
