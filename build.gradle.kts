@@ -1,22 +1,14 @@
-buildscript {
-    repositories {
-        google()
-        jcenter()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:4.2.1")
-        classpath(kotlin("gradle-plugin", version = "1.5.0"))
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.4.32")
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        jcenter()
-    }
+plugins {
+    id("com.android.application") version "7.2.1" apply false
+    id("org.jetbrains.kotlin.android") version "1.7.10" apply false
+    id("org.jetbrains.dokka") version "1.6.10" apply false
+    id("com.vanniktech.maven.publish") version "0.21.0" apply false
 }
 
 task<Delete>("clean") {
     delete = setOf(rootProject.buildDir)
+}
+
+extra.apply {
+    set("coroutinesVer", "1.6.4")
 }

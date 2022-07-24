@@ -1,41 +1,32 @@
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 
-buildscript {
-    repositories {
-        maven {
-            url = uri("https://plugins.gradle.org/m2/")
-        }
-    }
-    dependencies {
-        classpath("com.vanniktech:gradle-maven-publish-plugin:0.15.1")
-    }
-}
-
-apply(plugin = "com.vanniktech.maven.publish")
-
 plugins {
     id("com.android.library")
     kotlin("android")
     id("org.jetbrains.dokka")
+    id("com.vanniktech.maven.publish")
 }
 
 tasks.dokkaJavadoc.configure {
     outputDirectory.set(buildDir.resolve("javadoc"))
 }
 
-android {
-    compileSdkVersion(30)
+mavenPublishing {
+    signAllPublications()
+    pomFromGradleProperties()
+    publishToMavenCentral()
+}
 
+android {
+    compileSdk = 32
     defaultConfig {
-        minSdkVersion(16)
-        targetSdkVersion(30)
-        versionCode = 1
-        versionName = "3.0.0"
+        minSdk = 16
+        targetSdk = 32
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        getByName("release") {
+        release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -46,7 +37,7 @@ android {
     }
 }
 
-val verCoroutines = "1.5.0"
+val coroutinesVer: String by project
 val verActivity = "1.2.3"
 val varFragment = "1.3.3"
 
@@ -58,7 +49,7 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.2")
     implementation("androidx.annotation:annotation:1.2.0")
     implementation(kotlin("stdlib-jdk7", KotlinCompilerVersion.VERSION))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$verCoroutines")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVer")
     implementation("androidx.activity:activity:$verActivity")
     implementation("androidx.activity:activity-ktx:$verActivity")
     implementation("androidx.fragment:fragment:$varFragment")

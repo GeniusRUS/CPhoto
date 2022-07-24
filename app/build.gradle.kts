@@ -14,7 +14,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        getByName("release") {
+        release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -27,7 +27,7 @@ android {
     }
 }
 
-val verCoroutines = "1.5.0"
+val coroutinesVer: String by project
 val verActivity = "1.2.3"
 val varFragment = "1.3.3"
 
@@ -36,7 +36,7 @@ dependencies {
     implementation (kotlin("stdlib-jdk7", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
     implementation ("androidx.appcompat:appcompat:1.2.0")
     implementation ("androidx.constraintlayout:constraintlayout:2.0.4")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:$verCoroutines")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVer")
     implementation("androidx.activity:activity:$verActivity")
     implementation("androidx.activity:activity-ktx:$verActivity")
     implementation("androidx.fragment:fragment:$varFragment")
