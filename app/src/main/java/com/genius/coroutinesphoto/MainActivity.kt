@@ -1,114 +1,96 @@
 package com.genius.coroutinesphoto
 
 import android.os.Bundle
+import android.widget.Button
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 
-import com.genius.cphoto.CRPhoto
-import com.genius.cphoto.CancelOperationException
-import com.genius.cphoto.NotPermissionException
-import com.genius.cphoto.TypeRequest
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
+import com.genius.cphoto.TakeCombineImage
+import com.genius.cphoto.TakeDocumentFromSaf
+import com.genius.cphoto.TakeLocalPhoto
+import com.genius.cphoto.TakePhotoFromCamera
+import com.genius.cphoto.createImageUriNew
 
-class MainActivity : AppCompatActivity(), CoroutineScope {
+class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main
+    private lateinit var image: ImageView
+    private lateinit var gallery: Button
+    private lateinit var camera: Button
+    private lateinit var combine: Button
+    private lateinit var combineMultiple: Button
+    private lateinit var document: Button
+
+    private val takeLocalPhoto = registerForActivityResult(TakeLocalPhoto()) { result ->
+        result?.let { imageUri ->
+            image.setImageURI(imageUri)
+        } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+    }
+
+    private val takePhotoLauncher = registerForActivityResult(TakePhotoFromCamera()) { result ->
+        result?.let { list ->
+            image.setImageURI(list)
+        } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+    }
+
+    private val combineTakePhoto = registerForActivityResult(TakeCombineImage(title = "Title")) { result ->
+        result?.firstOrNull()?.let { imageUri ->
+            image.setImageURI(imageUri)
+        } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+    }
+
+    private val combineMultipleTakePhoto = registerForActivityResult(TakeCombineImage(isMultiple = true, title = "Multiple title", excludedPackages = listOf("ru.yandex.disk"))) { result ->
+        result?.let { list ->
+            Toast.makeText(this@MainActivity, "Image count picked: " + list.size.toString(), Toast.LENGTH_LONG).show()
+        } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+    }
+
+    private val safImage = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+        registerForActivityResult(TakeDocumentFromSaf()) { result ->
+            result?.let { imageUri ->
+                image.setImageURI(imageUri)
+            } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
+        }
+    } else null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        gallery.setOnClickListener { v ->
+        image = findViewById(R.id.image)
+        gallery = findViewById(R.id.gallery)
+        camera = findViewById(R.id.camera)
+        combine = findViewById(R.id.combine)
+        combineMultiple = findViewById(R.id.combine_multiple)
+        document = findViewById(R.id.document)
+
+        gallery.setOnClickListener {
             clear()
-
-            launch {
-                try {
-                    image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.GALLERY, 300, 300))
-                } catch (e: CancelOperationException) {
-                    Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
-                } catch (e: NotPermissionException) {
-                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
-                }
-            }
+            takeLocalPhoto.launch(null)
         }
 
-        camera.setOnClickListener { v ->
+        camera.setOnClickListener {
             clear()
-
-            launch {
-                try {
-                    image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.CAMERA))
-                } catch (e: CancelOperationException) {
-                    Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
-                } catch (e: NotPermissionException) {
-                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
-                }
-            }
+            takePhotoLauncher.launch(createImageUriNew())
         }
 
-        combine.setOnClickListener { v ->
+        combine.setOnClickListener {
             clear()
-
-            launch {
-                try {
-                    image.setImageBitmap(CRPhoto(v.context)
-                        .titleCombine("Custom chooser title")
-                        .excludedApplicationsFromCombine("ru.yandex.disk")
-                        .requestBitmap(TypeRequest.COMBINE))
-                } catch (e: CancelOperationException) {
-                    Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
-                } catch (e: NotPermissionException) {
-                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
-                }
-            }
+            combineTakePhoto.launch(createImageUriNew())
         }
 
-        combine_multiple.setOnClickListener { v ->
+        combineMultiple.setOnClickListener {
             clear()
-
-            launch {
-                try {
-                    Toast.makeText(this@MainActivity, CRPhoto(v.context)
-                        .excludedApplicationsFromCombine("ru.yandex.disk")
-                        .requestMultiPath().toString(), Toast.LENGTH_LONG).show()
-                } catch (e: CancelOperationException) {
-                    Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
-                } catch (e: NotPermissionException) {
-                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
-                }
-            }
+            combineMultipleTakePhoto.launch(createImageUriNew())
         }
 
-        document.setOnClickListener { v ->
+        document.isEnabled = safImage != null
+        document.setOnClickListener {
             clear()
-
-            launch {
-                try {
-                    image.setImageBitmap(CRPhoto(v.context).requestBitmap(TypeRequest.FROM_DOCUMENT))
-                } catch (e: CancelOperationException) {
-                    Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
-                } catch (e: NotPermissionException) {
-                    Toast.makeText(this@MainActivity, "Permission not granted for ${e.typeRequest}", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-
-        fragment.setOnClickListener {
-            supportFragmentManager
-                .beginTransaction()
-                .add(R.id.fl_container, MainFragment(), MainFragment.TAG)
-                .addToBackStack(null)
-                .commit()
+            safImage?.launch(true)
         }
     }
 
     private fun clear() {
         image.setImageBitmap(null)
-        thumbs.removeAllViews()
     }
 }

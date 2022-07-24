@@ -1,50 +1,42 @@
 package com.genius.cphoto
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
 import android.net.Uri
-import androidx.annotation.StringRes
+import android.os.Build
 import android.util.Pair
+import androidx.activity.result.ActivityResultCaller
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.annotation.StringDef
-import androidx.fragment.app.FragmentActivity
+import androidx.annotation.StringRes
+import androidx.annotation.WorkerThread
+import androidx.core.content.FileProvider
 import com.genius.cphoto.util.CRFileUtils
 import com.genius.cphoto.util.CRUtils
 import kotlinx.coroutines.CompletableDeferred
-import java.io.IOException
-import android.content.ContextWrapper
-import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.ResultReceiver
-import androidx.annotation.RequiresApi
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
- * Created by Genius on 03.12.2017.
+ * @author Genius. 03.12.2017
+ *
+ * @param context - context for resolving strings or bitmap manage
+ * @param caller - a class that implements [androidx.activity.result.ActivityResultRegistry] for a call. Usually, AppCompatFragment or Fragment
  */
 @Suppress("UNUSED")
-class CRPhoto(private val context: Context) {
+@Deprecated("Please use ActivityResultApi")
+class CRPhoto(private val context: Context, private val caller: ActivityResultCaller) {
 
     private var bitmapSizes: Pair<Int, Int>? = null
     private var publishSubject: CompletableDeferred<*>? = null
     private lateinit var response: String
     private var excludedPackages: List<String>? = null
-    private val receiver: ResultReceiver by lazy {
-        object : ResultReceiver(Handler(context.mainLooper)) {
-            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                if (resultCode == OverlapFragment.SUCCESS_CODE) {
-                    when {
-                        resultData?.containsKey(OverlapFragment.SINGLE_PAYLOAD) == true -> resultData.getParcelable<Uri>(OverlapFragment.SINGLE_PAYLOAD)?.let { propagateResult(it) }
-                        resultData?.containsKey(OverlapFragment.MULTI_PAYLOAD) == true -> resultData.getParcelableArrayList<Uri>(OverlapFragment.MULTI_PAYLOAD)?.let { propagateMultipleResult(it) }
-                    }
-                } else if (resultCode == OverlapFragment.ERROR_CODE) {
-                    val exception = resultData?.getSerializable(OverlapFragment.ERROR_PAYLOAD) as? Exception? ?: return
-                    publishSubject?.completeExceptionally(exception)
-                }
-            }
-        }
-    }
 
     var title: String? = null
         private set
@@ -55,6 +47,12 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits bitmaps
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestBitmap(@TypeRequest typeRequest: String): Bitmap {
         return requestBitmap(typeRequest, Pair(IMAGE_SIZE, IMAGE_SIZE))
     }
@@ -67,6 +65,12 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits single bitmap
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestBitmap(@TypeRequest typeRequest: String, width: Int, height: Int): Bitmap {
         return requestBitmap(typeRequest, Pair(width, height))
     }
@@ -76,6 +80,12 @@ class CRPhoto(private val context: Context) {
      * @return - observable tah emits list of scaled bitmaps
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiBitmap(): List<Bitmap> {
         return requestMultiBitmap(Pair(IMAGE_SIZE, IMAGE_SIZE))
     }
@@ -87,6 +97,12 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits list of bitmaps
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiBitmap(width: Int, height: Int): List<Bitmap> {
         return requestMultiBitmap(Pair(width, height))
     }
@@ -98,9 +114,15 @@ class CRPhoto(private val context: Context) {
      * @return - explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestBitmap(@TypeRequest typeRequest: String, bitmapSize: Pair<Int, Int>): Bitmap {
         response = BITMAP
-        startOverlapFragment(typeRequest)
+        startJob(typeRequest)
         this.bitmapSizes = bitmapSize
         return CompletableDeferred<Bitmap>().apply {
             publishSubject = this
@@ -109,14 +131,20 @@ class CRPhoto(private val context: Context) {
 
     /**
      * Request for single uri
+     * *NOTE* Google Photo Content Provider forbids the use of it URI in other contexts, in addition, from which the call was made
      * @param typeRequest - selected source for emitter
      * @return - observable that emits a single uri
      */
     @Throws(CancelOperationException::class)
-    @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestUri(@TypeRequest typeRequest: String): Uri {
         response = URI
-        startOverlapFragment(typeRequest)
+        startJob(typeRequest)
         return CompletableDeferred<Uri>().apply {
             publishSubject = this
         }.await()
@@ -128,9 +156,15 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits a single path
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage()",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestPath(@TypeRequest typeRequest: String): String {
         response = PATH
-        startOverlapFragment(typeRequest)
+        startJob(typeRequest)
         return CompletableDeferred<String>().apply {
             publishSubject = this
         }.await()
@@ -142,9 +176,15 @@ class CRPhoto(private val context: Context) {
      * @return - explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiBitmap(bitmapSize: Pair<Int, Int>): List<Bitmap> {
         response = BITMAP
-        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
+        startJob(TypeRequest.COMBINE_MULTIPLE)
         this.bitmapSizes = bitmapSize
         return CompletableDeferred<List<Bitmap>>().apply {
             publishSubject = this
@@ -153,13 +193,19 @@ class CRPhoto(private val context: Context) {
 
     /**
      * Request for list of uris
+     * *NOTE* Google Photo Content Provider forbids the use of it URI in other contexts, in addition, from which the call was made
      * @return - observable that emits a list of uris
      */
     @Throws(CancelOperationException::class)
-    @Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made")
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiUri(): List<Uri> {
         response = URI
-        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
+        startJob(TypeRequest.COMBINE_MULTIPLE)
         return CompletableDeferred<List<Uri>>().apply {
             publishSubject = this
         }.await()
@@ -170,9 +216,15 @@ class CRPhoto(private val context: Context) {
      * @return - observable that emits a list of paths
      */
     @Throws(CancelOperationException::class)
+    @Deprecated(
+        message = "Please use ActivityResultApi with TakeCombineImage contract",
+        replaceWith = ReplaceWith(
+            expression = "TakeCombineImage(true)",
+            imports = ["com.genius.cphoto.TakeCombineImage"]),
+    )
     suspend fun requestMultiPath(): List<String> {
         response = PATH
-        startOverlapFragment(TypeRequest.COMBINE_MULTIPLE)
+        startJob(TypeRequest.COMBINE_MULTIPLE)
         return CompletableDeferred<List<String>>().apply {
             publishSubject = this
         }.await()
@@ -208,63 +260,68 @@ class CRPhoto(private val context: Context) {
         return this
     }
 
-    /**
-     * Start fragment for action
-     * Calling [OverlapFragment.newInstance] with selected type request and CRPhoto instance
-     * @param typeRequest - selected request
-     */
-    private fun startOverlapFragment(@TypeRequest typeRequest: String) {
-        val activity = findActivityInContext(context)
-        if (activity == null) {
-            publishSubject?.completeExceptionally(ClassCastException("Couldn't find FragmentActivity in attached Context"))
+    @SuppressLint("NewApi")
+    private fun startJob(@TypeRequest typeRequest: String) {
+        if (!hasPermission()) {
+            caller.registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) startJob(typeRequest)
+            }.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return
         }
-
-        if (!activity.supportFragmentManager.isStateSaved) {
-            activity.supportFragmentManager.findFragmentByTag(OverlapFragment.TAG)?.let { overlapFragment ->
-                (overlapFragment as? OverlapFragment)?.newRequest(typeRequest, receiver, title, excludedPackages)
-            } ?: activity.supportFragmentManager.beginTransaction()
-                .add(OverlapFragment.newInstance(typeRequest, receiver, title, excludedPackages), OverlapFragment.TAG)
-                .commit()
-        }
-    }
-
-    /**
-     * Get the bitmap from the source by URI
-     * @param uri - uri source
-     * @return image in bitmap
-     */
-    @Throws(IOException::class)
-    private fun getBitmapFromStream(uri: Uri): Bitmap? {
-        return CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second)
-    }
-
-    /**
-     * Try to find the FragmentActivity inside current Context
-     */
-    private fun findActivityInContext(context: Context): FragmentActivity? {
-        if (context is FragmentActivity) return context
-
-        var currentStepContext = context
-        while (currentStepContext is ContextWrapper) {
-            if (currentStepContext is FragmentActivity) {
-                return currentStepContext
+        when (typeRequest) {
+            TypeRequest.CAMERA -> context.createImageUriNew().also { createdUri ->
+                caller.registerForActivityResult(TakePhotoFromCamera()) { result ->
+                    if (result != null) {
+                        propagateResult(result)
+                    } else {
+                        publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.CAMERA))
+                    }
+                }.launch(createdUri)
             }
-            currentStepContext = currentStepContext.baseContext
+            TypeRequest.COMBINE -> context.createImageUriNew().also {
+                caller.registerForActivityResult(TakeCombineImage(false, title, excludedPackages)) { uris ->
+                    uris?.let { nonNullableUris ->
+                        propagateResult(nonNullableUris.first())
+                    } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
+                }.launch(it)
+            }
+            TypeRequest.COMBINE_MULTIPLE -> context.createImageUriNew().also {
+                caller.registerForActivityResult(TakeCombineImage(true, title, excludedPackages)) { uris ->
+                    uris?.let { nonNullableUris ->
+                        propagateMultipleResult(nonNullableUris)
+                    } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))
+                }.launch(it)
+            }
+            TypeRequest.GALLERY -> caller.registerForActivityResult(TakeLocalPhoto()) { uri ->
+                uri?.let {
+                    propagateResult(it)
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.GALLERY))
+            }.launch(null)
+            TypeRequest.FROM_DOCUMENT -> caller.registerForActivityResult(TakeDocumentFromSaf()) { uri ->
+                uri?.let {
+                    propagateResult(it)
+                } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.FROM_DOCUMENT))
+            }.launch(true)
         }
-        return null
     }
 
     /**
      * Handle result from fragment
      * @param uri - uri-result
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateResult(uri: Uri) {
         try {
             when (response) {
-                BITMAP -> propagateBitmap(uri)
-                URI -> propagateUri(uri)
-                PATH -> propagatePath(uri)
+                URI -> (publishSubject as? CompletableDeferred<Uri>)?.complete(uri)
+                BITMAP -> CRUtils.getBitmap(context, uri, bitmapSizes?.first, bitmapSizes?.second).let {
+                    (publishSubject as? CompletableDeferred<Bitmap>)?.complete(it)
+                }
+                PATH -> CRFileUtils.getPath(context, uri)?.let {
+                    (publishSubject as? CompletableDeferred<String>)?.complete(it)
+                } ?: (publishSubject as? CompletableDeferred<String>)?.completeExceptionally(
+                    NullPointerException("Cannot recover image for URI: $uri. Please ensure that file is in local storage")
+                )
             }
         } catch (e: Exception) {
             publishSubject?.completeExceptionally(e)
@@ -275,80 +332,29 @@ class CRPhoto(private val context: Context) {
      * Handle multiple result from fragment
      * @param uris - uris items from fragment
      */
+    @Suppress("UNCHECKED_CAST")
     private fun propagateMultipleResult(uris: List<Uri>) {
         try {
             when (response) {
-                BITMAP -> propagateMultipleBitmap(uris)
-                URI -> propagateMultipleUri(uris)
-                PATH -> propagateMultiplePaths(uris)
+                URI -> (publishSubject as? CompletableDeferred<List<Uri>>)?.complete(uris)
+                BITMAP -> {
+                    uris.map { item -> CRUtils.getBitmap(context, item, bitmapSizes?.first, bitmapSizes?.second) }.apply {
+                        (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(this)
+                    }
+                }
+                PATH -> {
+                    (publishSubject as? CompletableDeferred<List<String>>)?.let { continuation ->
+                        continuation.complete(uris.mapNotNull { uri -> CRFileUtils.getPath(context, uri) })
+                    }
+                }
             }
         } catch (e: Exception) {
             publishSubject?.completeExceptionally(e)
         }
     }
 
-    /**
-     * Handle single result from fragment
-     * @param uri - uri item from fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateUri(uri: Uri) {
-        (publishSubject as? CompletableDeferred<Uri>)?.complete(uri)
-    }
-
-    /**
-     * Handle single result from fragment
-     * @param uri - uri item from fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagatePath(uri: Uri) {
-        CRFileUtils.getPath(context, uri)?.let {
-            (publishSubject as? CompletableDeferred<String>)?.complete(it)
-        } ?: (publishSubject as? CompletableDeferred<String>)?.completeExceptionally(
-            NullPointerException("Cannot recover image for URI: $uri")
-        )
-    }
-
-    /**
-     * Handle multiple result from fragment
-     * @param uris - uris items from fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateMultipleUri(uris: List<Uri>) {
-        (publishSubject as? CompletableDeferred<List<Uri>>)?.complete(uris)
-    }
-
-    /**
-     * Handle result list of paths from fragment
-     * @param uris - uris of path image fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateMultiplePaths(uris: List<Uri>) {
-        (publishSubject as? CompletableDeferred<List<String>>)?.let { continuation ->
-            continuation.complete(uris.mapNotNull { uri -> CRFileUtils.getPath(context, uri) })
-        }
-    }
-
-    /**
-     * Handle single result bitmap from fragment
-     * @param uriBitmap - uri for bitmap image fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateBitmap(uriBitmap: Uri) {
-        getBitmapFromStream(uriBitmap)?.let {
-            (publishSubject as? CompletableDeferred<Bitmap>)?.complete(it)
-        } ?: publishSubject?.completeExceptionally(IllegalStateException("Bitmap is null"))
-
-    }
-
-    /**
-     * Handle result list of bitmaps from fragment
-     * @param uris - uris of bitmap image fragment
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun propagateMultipleBitmap(uris: List<Uri>) {
-        val images = uris.mapNotNull { item -> getBitmapFromStream(item) }
-        (publishSubject as? CompletableDeferred<List<Bitmap>>)?.complete(images)
+    private fun hasPermission(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 
     companion object {
@@ -389,6 +395,12 @@ annotation class TypeRequest {
     }
 }
 
+fun Context.createImageUriNew(): Uri? {
+    val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val file = File(cacheDir, "$timeStamp.jpg")
+    return FileProvider.getUriForFile(this,"${packageName}.cphoto.fileprovider", file)
+}
+
 /**
  * Get thumbnails bitmap for selected scale from source
  * @param resizeValues - pair values with requested size for bitmap
@@ -398,17 +410,11 @@ annotation class TypeRequest {
 infix fun Bitmap.toThumb(resizeValues: Pair<Int, Int>): Bitmap {
     return ThumbnailUtils.extractThumbnail(this, resizeValues.first, resizeValues.second)
 }
-@Suppress("UNUSED")
-suspend infix fun Context.takePhotoPath(@TypeRequest typeRequest: String): String {
-    return CRPhoto(this).requestPath(typeRequest)
-}
-@Suppress("UNUSED")
-suspend infix fun Context.takePhotoBitmap(@TypeRequest typeRequest: String): Bitmap {
-    return CRPhoto(this).requestBitmap(typeRequest)
-}
 
-@Suppress("DEPRECATION")
-@Deprecated(message = "Because Google Photo Content Provider forbids the use of it ury in other contexts, in addition, from which the call was made", replaceWith = ReplaceWith("CRPhoto(this).requestPath(typeRequest)", "com.genius.cphoto.CRPhoto"))
-suspend infix fun Context.takePhotoUri(@TypeRequest typeRequest: String): Uri {
-    return CRPhoto(this).requestUri(typeRequest)
-}
+@Suppress("UNUSED")
+@WorkerThread
+fun Uri.toAbsolutePath(context: Context): String? = CRFileUtils.getPath(context, this)
+
+@Suppress("UNUSED")
+@WorkerThread
+fun Uri.toBitmap(context: Context, width: Int? = null, height: Int? = null): Bitmap = CRUtils.getBitmap(context, this, width, height)

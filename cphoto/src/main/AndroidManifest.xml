@@ -1,9 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.genius.cphoto" >
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-
     <application>
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -25,5 +22,4 @@
             <action android:name="android.media.action.IMAGE_CAPTURE"/>
         </intent>
     </queries>
-
 </manifest>

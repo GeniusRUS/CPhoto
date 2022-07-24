@@ -1,5 +1,5 @@
 # CPhoto
-<a href='https://bintray.com/geniusrus/CPhoto/com.geniusrus.cphoto/_latestVersion'><img src='https://api.bintray.com/packages/geniusrus/CPhoto/com.geniusrus.cphoto/images/download.svg'></a>
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.geniusrus/cphoto/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.geniusrus/cphoto)
 
 ## Short description
 Simple way to obtain picture from file system & photo with the Kotlin Coroutines

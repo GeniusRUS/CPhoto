@@ -19,19 +19,21 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-
             <Button
                 android:id="@+id/gallery"
-                android:layout_width="wrap_content"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/label_gallery" />
 
             <Button
                 android:id="@+id/camera"
-                android:layout_width="wrap_content"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/label_camera" />
-
         </LinearLayout>
 
         <LinearLayout
@@ -42,14 +44,18 @@
 
             <Button
                 android:id="@+id/combine"
-                android:layout_width="wrap_content"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/label_combine" />
 
             <Button
                 android:id="@+id/combine_multiple"
-                android:layout_width="wrap_content"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/label_combine_multiple" />
 
         </LinearLayout>
@@ -61,15 +67,11 @@
 
             <Button
                 android:id="@+id/document"
-                android:layout_width="wrap_content"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/label_document" />
-
-            <Button
-                android:id="@+id/fragment"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/label_fragment" />
         </LinearLayout>
 
         <ImageView
@@ -79,19 +81,8 @@
             tools:layout_width="120dp"
             tools:layout_height="120dp"
             android:layout_gravity="center"
-            tools:background="@android:color/black" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
-
-        <LinearLayout
-            android:id="@+id/thumbs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:orientation="horizontal" />
+            tools:background="@android:color/black"
+            tools:ignore="ContentDescription" />
     </LinearLayout>
 
 </FrameLayout>

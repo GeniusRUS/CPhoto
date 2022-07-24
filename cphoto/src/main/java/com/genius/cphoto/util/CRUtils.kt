@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import androidx.exifinterface.media.ExifInterface
 import com.genius.cphoto.CRPhoto.Companion.IMAGE_SIZE
@@ -20,11 +22,11 @@ class CRUtils {
     companion object {
 
         @Throws(IOException::class)
-        private fun modifyOrientation(bitmap: Bitmap?, absolutePath: String?, fileDescriptor: FileDescriptor?): Bitmap {
+        private fun modifyOrientation(bitmap: Bitmap?, localFilePath: String?, externalFileDescriptor: FileDescriptor? = null): Bitmap {
             val ei = when {
                 bitmap == null -> throw IllegalStateException("Decoded bitmap is null")
-                !absolutePath.isNullOrEmpty() -> ExifInterface(absolutePath)
-                fileDescriptor != null -> ExifInterface(fileDescriptor)
+                !localFilePath.isNullOrEmpty() -> ExifInterface(localFilePath)
+                externalFileDescriptor != null -> ExifInterface(externalFileDescriptor)
                 else -> throw IllegalStateException("Sources is null")
             }
 
@@ -85,21 +87,32 @@ class CRUtils {
                 null
             }
 
-            var fileDescriptor: FileDescriptor? = null
             val iOptions = BitmapFactory.Options()
             iOptions.inJustDecodeBounds = true
             iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: IMAGE_SIZE, height ?: IMAGE_SIZE)
             iOptions.inJustDecodeBounds = false
 
             val original = if (path == null) {
-                fileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")?.fileDescriptor
-                val content = context.contentResolver.openInputStream(uri)
-                BitmapFactory.decodeStream(content, null, iOptions)
+                context.contentResolver.openInputStream(uri).use { content ->
+                    BitmapFactory.decodeStream(content, null, iOptions)
+                }
             } else {
-                BitmapFactory.decodeFile(path, iOptions)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(
+                            context.contentResolver,
+                            uri
+                        )
+                    ) { decoder, _, _ ->
+                        decoder.isMutableRequired = true
+                    }
+                } else {
+                    val decodedBitmap = BitmapFactory.decodeFile(path, iOptions)
+                    modifyOrientation(decodedBitmap, path)
+                }
             }
 
-            return modifyOrientation(original, path, fileDescriptor)
+            return original ?: throw IllegalStateException("Decoded bitmap is null")
         }
 
         private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
