@@ -29,7 +29,7 @@ import java.util.*
  * @param context - context for resolving strings or bitmap manage
  * @param caller - a class that implements [androidx.activity.result.ActivityResultRegistry] for a call. Usually, AppCompatFragment or Fragment
  */
-@Suppress("UNUSED")
+@Suppress("UNUSED", "DEPRECATION")
 @Deprecated("Please use ActivityResultApi")
 class CRPhoto(private val context: Context, private val caller: ActivityResultCaller) {
 
@@ -388,17 +388,16 @@ annotation class TypeRequest {
         const val CAMERA = "CAMERA"
         const val GALLERY = "GALLERY"
         const val COMBINE = "COMBINE"
-        @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
         const val COMBINE_MULTIPLE = "COMBINE_MULTIPLE"
         @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         const val FROM_DOCUMENT = "FROM_DOCUMENT"
     }
 }
 
-fun Context.createImageUriNew(): Uri? {
+fun Context.createImageUriNew(authority: String = "${packageName}.cphoto.fileprovider"): Uri? {
     val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val file = File(cacheDir, "$timeStamp.jpg")
-    return FileProvider.getUriForFile(this,"${packageName}.cphoto.fileprovider", file)
+    val file = File(cacheDir, "photo_$timeStamp.jpg")
+    return FileProvider.getUriForFile(this, authority, file)
 }
 
 /**

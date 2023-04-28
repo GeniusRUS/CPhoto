@@ -13,15 +13,14 @@ tasks.dokkaJavadoc.configure {
 
 mavenPublishing {
     signAllPublications()
-    pomFromGradleProperties()
     publishToMavenCentral()
 }
 
 android {
-    compileSdk = 32
+    namespace = "com.genius.cphoto"
+    compileSdk = 33
     defaultConfig {
         minSdk = 16
-        targetSdk = 32
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -31,23 +30,26 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-
-    buildFeatures {
-        buildConfig = false
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 }
 
 val coroutinesVer: String by project
-val verActivity = "1.2.3"
-val varFragment = "1.3.3"
+val verActivity = "1.7.1"
+val varFragment = "1.5.7"
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test:runner:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
-    compileOnly("androidx.appcompat:appcompat:1.2.0")
-    implementation("androidx.exifinterface:exifinterface:1.3.2")
-    implementation("androidx.annotation:annotation:1.2.0")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    compileOnly("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.exifinterface:exifinterface:1.3.6")
+    implementation("androidx.annotation:annotation:1.6.0")
     implementation(kotlin("stdlib-jdk7", KotlinCompilerVersion.VERSION))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVer")
     implementation("androidx.activity:activity:$verActivity")

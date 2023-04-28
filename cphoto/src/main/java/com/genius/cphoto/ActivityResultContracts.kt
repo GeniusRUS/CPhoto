@@ -61,8 +61,8 @@ class TakeCombineImage(
     private val title: String? = null,
     private val excludedPackages: List<String>? = null
 ) : ActivityResultContract<Uri, List<Uri>?>() {
-    private var fileUri: Uri? = null
-    override fun createIntent(context: Context, input: Uri?): Intent {
+    private lateinit var fileUri: Uri
+    override fun createIntent(context: Context, input: Uri): Intent {
         if (!CRUtils.isExternalStorageWritable()) {
             throw ExternalStorageWriteException()
         }
@@ -96,7 +96,7 @@ class TakeCombineImage(
                 intent.data?.let { uri ->
                     arrayListOf(uri)
                 } ?: listOf()
-            } else fileUri?.let { listOf(it) } ?: listOf()
+            } else listOf(fileUri)
         } else null
     }
 }
