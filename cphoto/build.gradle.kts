@@ -40,8 +40,8 @@ android {
 }
 
 val coroutinesVer: String by project
-val verActivity = "1.7.1"
-val varFragment = "1.5.7"
+val verActivity = "1.7.2"
+val varFragment = "1.6.0"
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
@@ -50,7 +50,7 @@ dependencies {
     compileOnly("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.exifinterface:exifinterface:1.3.6")
     implementation("androidx.annotation:annotation:1.6.0")
-    implementation(kotlin("stdlib-jdk7", KotlinCompilerVersion.VERSION))
+    implementation(kotlin("stdlib", KotlinCompilerVersion.VERSION))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVer")
     implementation("androidx.activity:activity:$verActivity")
     implementation("androidx.activity:activity-ktx:$verActivity")

@@ -36,12 +36,12 @@ android {
 }
 
 val coroutinesVer: String by project
-val verActivity = "1.7.1"
-val varFragment = "1.5.7"
+val verActivity = "1.7.2"
+val varFragment = "1.6.0"
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    implementation (kotlin("stdlib-jdk7", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
+    implementation (kotlin("stdlib", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
     implementation ("androidx.appcompat:appcompat:1.6.1")
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVer")

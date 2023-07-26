@@ -2,6 +2,7 @@ package com.genius.cphoto.util
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
@@ -42,20 +43,23 @@ class CRUtils {
 
         /**
          * Adding multiple intents of camera and gallery
-         * @param context - current context
-         * @param list - List<Intent> for receiving incoming Intents
+         * @param this@getActivitiesForIntent - current context
          * @param intent - Intent for receive
-        </Intent> */
-        fun addIntentsToList(context: Context, list: MutableList<Intent>, intent: Intent, excludedPackages: List<String>? = null): MutableList<Intent> {
-            val resInfo = context.packageManager.queryIntentActivities(intent, 0)
-            for (resolveInfo in resInfo) {
+         */
+        @Suppress("DEPRECATION")
+        fun Context.getActivitiesForIntent(intent: Intent, excludedPackages: List<String>? = null): List<Intent> {
+            val activities = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
+            } else {
+                packageManager.queryIntentActivities(intent, 0)
+            }
+            return activities.mapNotNull { resolveInfo ->
                 val packageName = resolveInfo.activityInfo.packageName
-                if (excludedPackages?.contains(packageName) == true) continue
+                if (excludedPackages?.contains(packageName) == true) return@mapNotNull null
                 val targetedIntent = Intent(intent)
                 targetedIntent.`package` = packageName
-                list.add(targetedIntent)
+                targetedIntent
             }
-            return list
         }
 
         /**

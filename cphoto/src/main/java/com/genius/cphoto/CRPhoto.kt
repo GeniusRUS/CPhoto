@@ -279,14 +279,14 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
                 }.launch(createdUri)
             }
             TypeRequest.COMBINE -> context.createImageUriNew().also {
-                caller.registerForActivityResult(TakeCombineImage(false, title, excludedPackages)) { uris ->
+                caller.registerForActivityResult(TakeCombineImage(false, title?.let { { it } }, excludedPackages)) { uris ->
                     uris?.let { nonNullableUris ->
                         propagateResult(nonNullableUris.first())
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE))
                 }.launch(it)
             }
             TypeRequest.COMBINE_MULTIPLE -> context.createImageUriNew().also {
-                caller.registerForActivityResult(TakeCombineImage(true, title, excludedPackages)) { uris ->
+                caller.registerForActivityResult(TakeCombineImage(true, title?.let { { it } }, excludedPackages)) { uris ->
                     uris?.let { nonNullableUris ->
                         propagateMultipleResult(nonNullableUris)
                     } ?: publishSubject?.completeExceptionally(CancelOperationException(TypeRequest.COMBINE_MULTIPLE))

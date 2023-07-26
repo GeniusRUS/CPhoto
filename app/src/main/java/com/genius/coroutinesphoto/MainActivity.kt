@@ -1,10 +1,12 @@
 package com.genius.coroutinesphoto
 
+import android.Manifest
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 
 import com.genius.cphoto.TakeCombineImage
 import com.genius.cphoto.TakeDocumentFromSaf
@@ -21,6 +23,18 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private lateinit var combineMultiple: Button
     private lateinit var document: Button
 
+    private val cameraPermissionCaller = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted[Manifest.permission.CAMERA] == true) {
+            combineTakePhoto.launch(createImageUriNew())
+        }
+    }
+
+    private val cameraMultiplePermissionCaller = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted[Manifest.permission.CAMERA] == true) {
+            combineMultipleTakePhoto.launch(createImageUriNew())
+        }
+    }
+
     private val takeLocalPhoto = registerForActivityResult(TakeLocalPhoto()) { result ->
         result?.let { imageUri ->
             image.setImageURI(imageUri)
@@ -33,13 +47,27 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
     }
 
-    private val combineTakePhoto = registerForActivityResult(TakeCombineImage(title = "Title")) { result ->
+    private val combineTakePhoto = registerForActivityResult(
+        TakeCombineImage(
+            title = {
+                getString(R.string.pick_image_with)
+            }
+        )
+    ) { result ->
         result?.firstOrNull()?.let { imageUri ->
             image.setImageURI(imageUri)
         } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
     }
 
-    private val combineMultipleTakePhoto = registerForActivityResult(TakeCombineImage(isMultiple = true, title = "Multiple title", excludedPackages = listOf("ru.yandex.disk"))) { result ->
+    private val combineMultipleTakePhoto = registerForActivityResult(
+        TakeCombineImage(
+            isMultiple = true,
+            title = {
+                getString(R.string.pick_images_with)
+            },
+            excludedPackages = listOf("ru.yandex.disk")
+        )
+    ) { result ->
         result?.let { list ->
             Toast.makeText(this@MainActivity, "Image count picked: " + list.size.toString(), Toast.LENGTH_LONG).show()
         } ?: Toast.makeText(this@MainActivity, "Operation cancelled", Toast.LENGTH_LONG).show()
@@ -75,12 +103,20 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
         combine.setOnClickListener {
             clear()
-            combineTakePhoto.launch(createImageUriNew())
+            cameraPermissionCaller.launch(
+                arrayOf(
+                    Manifest.permission.CAMERA
+                )
+            )
         }
 
         combineMultiple.setOnClickListener {
             clear()
-            combineMultipleTakePhoto.launch(createImageUriNew())
+            cameraMultiplePermissionCaller.launch(
+                arrayOf(
+                    Manifest.permission.CAMERA
+                )
+            )
         }
 
         document.isEnabled = safImage != null

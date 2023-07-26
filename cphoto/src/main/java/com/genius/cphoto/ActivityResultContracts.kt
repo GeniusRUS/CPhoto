@@ -11,6 +11,7 @@ import android.provider.MediaStore
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.RequiresApi
 import com.genius.cphoto.util.CRUtils
+import com.genius.cphoto.util.CRUtils.Companion.getActivitiesForIntent
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
 class TakeDocumentFromSaf : ActivityResultContract<Boolean?, Uri?>() {
@@ -58,7 +59,7 @@ class TakePhotoFromCamera : ActivityResultContract<Uri?, Uri?>() {
 
 class TakeCombineImage(
     private val isMultiple: Boolean = false,
-    private val title: String? = null,
+    private val title: (() -> String)? = null,
     private val excludedPackages: List<String>? = null
 ) : ActivityResultContract<Uri, List<Uri>?>() {
     private lateinit var fileUri: Uri
@@ -66,20 +67,19 @@ class TakeCombineImage(
         if (!CRUtils.isExternalStorageWritable()) {
             throw ExternalStorageWriteException()
         }
-
-        var intentList: MutableList<Intent> = ArrayList()
+        val intentList = mutableListOf<Intent>()
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, isMultiple)
         }
-        intentList = CRUtils.addIntentsToList(context, intentList, pickIntent, excludedPackages)
+        intentList.addAll(context.getActivitiesForIntent(pickIntent, excludedPackages))
         fileUri = input
-        val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            .putExtra(MediaStore.EXTRA_OUTPUT, input)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        intentList = CRUtils.addIntentsToList(context, intentList, takePhotoIntent)
-        return Intent.createChooser(intentList.removeAt(intentList.size - 1), title).apply {
+        val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, input)
+        }
+        intentList.addAll(context.getActivitiesForIntent(takePhotoIntent))
+        return Intent.createChooser(intentList.removeAt(intentList.size - 1), title?.invoke()).apply {
             putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray<Parcelable>())
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }

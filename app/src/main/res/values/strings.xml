@@ -6,4 +6,7 @@
     <string name="label_combine_multiple">COMBINE MULTIPLE</string>
 
     <string name="label_document">DOCUMENT</string>
+
+    <string name="pick_image_with">Pick image with…</string>
+    <string name="pick_images_with">Pick images with…</string>
 </resources>
