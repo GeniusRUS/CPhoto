@@ -26,8 +26,8 @@ import java.util.*
 /**
  * @author Genius. 03.12.2017
  *
- * @param context - context for resolving strings or bitmap manage
- * @param caller - a class that implements [androidx.activity.result.ActivityResultRegistry] for a call. Usually, AppCompatFragment or Fragment
+ * @param context context for resolving strings or bitmap manage
+ * @param caller a class that implements [androidx.activity.result.ActivityResultRegistry] for a call. Usually, AppCompatFragment or Fragment
  */
 @Suppress("UNUSED", "DEPRECATION")
 @Deprecated("Please use ActivityResultApi")
@@ -43,8 +43,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Generic request for
-     * @param typeRequest - selected source for bitmap
-     * @return - observable that emits bitmaps
+     * @param typeRequest selected source for bitmap
+     * @return observable that emits bitmaps
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -59,10 +59,10 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for single bitmap with explicitly set of size
-     * @param typeRequest - selected source for bitmap
-     * @param width - width of resized bitmap
-     * @param height - height of resized bitmap
-     * @return - observable that emits single bitmap
+     * @param typeRequest selected source for bitmap
+     * @param width width of resized bitmap
+     * @param height height of resized bitmap
+     * @return observable that emits single bitmap
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -77,7 +77,7 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for list of bitmaps with default (1024) size
-     * @return - observable tah emits list of scaled bitmaps
+     * @return observable tah emits list of scaled bitmaps
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -109,9 +109,9 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Generic request for getting bitmap observable
-     * @param typeRequest - selected source for emitter
-     * @param bitmapSize - requested bitmap scale size
-     * @return - explicitly scaled or not (1024 by default) bitmap
+     * @param typeRequest selected source for emitter
+     * @param bitmapSize requested bitmap scale size
+     * @return explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -132,8 +132,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
     /**
      * Request for single uri
      * *NOTE* Google Photo Content Provider forbids the use of it URI in other contexts, in addition, from which the call was made
-     * @param typeRequest - selected source for emitter
-     * @return - observable that emits a single uri
+     * @param typeRequest selected source for emitter
+     * @return observable that emits a single uri
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -152,8 +152,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for single path of file
-     * @param typeRequest - selected source for emitter
-     * @return - observable that emits a single path
+     * @param typeRequest selected source for emitter
+     * @return observable that emits a single path
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -172,8 +172,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for list of bitmaps with explicitly set of size
-     * @param bitmapSize - requested bitmap scale size
-     * @return - explicitly scaled or not (1024 by default) bitmap
+     * @param bitmapSize requested bitmap scale size
+     * @return explicitly scaled or not (1024 by default) bitmap
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -194,7 +194,7 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
     /**
      * Request for list of uris
      * *NOTE* Google Photo Content Provider forbids the use of it URI in other contexts, in addition, from which the call was made
-     * @return - observable that emits a list of uris
+     * @return observable that emits a list of uris
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -213,7 +213,7 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Request for list of paths
-     * @return - observable that emits a list of paths
+     * @return observable that emits a list of paths
      */
     @Throws(CancelOperationException::class)
     @Deprecated(
@@ -232,8 +232,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Adding title to intent chooser on string
-     * @param title - title in string
-     * @return - parent class
+     * @param title title in string
+     * @return parent class
      */
     fun titleCombine(title: String): CRPhoto {
         this.title = title
@@ -242,8 +242,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Excludes selected applications from picker
-     * @param appPackages - packages to exclude
-     * @return - parent class
+     * @param appPackages packages to exclude
+     * @return parent class
      */
     fun excludedApplicationsFromCombine(vararg appPackages: String): CRPhoto {
         this.excludedPackages = appPackages.toList()
@@ -252,8 +252,8 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Adding title to intent chooser on resource id
-     * @param titleId - title in resources id
-     * @return - parent class
+     * @param titleId title in resources id
+     * @return parent class
      */
     fun titleCombine(@StringRes titleId: Int): CRPhoto {
         this.title = context.getString(titleId)
@@ -307,7 +307,7 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Handle result from fragment
-     * @param uri - uri-result
+     * @param uri uri-result
      */
     @Suppress("UNCHECKED_CAST")
     private fun propagateResult(uri: Uri) {
@@ -330,7 +330,7 @@ class CRPhoto(private val context: Context, private val caller: ActivityResultCa
 
     /**
      * Handle multiple result from fragment
-     * @param uris - uris items from fragment
+     * @param uris uris items from fragment
      */
     @Suppress("UNCHECKED_CAST")
     private fun propagateMultipleResult(uris: List<Uri>) {
@@ -402,8 +402,8 @@ fun Context.createImageUriNew(authority: String = "${packageName}.cphoto.filepro
 
 /**
  * Get thumbnails bitmap for selected scale from source
- * @param resizeValues - pair values with requested size for bitmap
- * @return - scaled bitmap
+ * @param resizeValues pair values with requested size for bitmap
+ * @return scaled bitmap
  */
 @Suppress("UNUSED")
 infix fun Bitmap.toThumb(resizeValues: Pair<Int, Int>): Bitmap {

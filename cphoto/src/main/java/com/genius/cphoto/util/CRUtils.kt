@@ -3,6 +3,7 @@ package com.genius.cphoto.util
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
@@ -43,15 +44,15 @@ class CRUtils {
 
         /**
          * Adding multiple intents of camera and gallery
-         * @param this@getActivitiesForIntent - current context
-         * @param intent - Intent for receive
+         * @receiver current context instance
+         * @param intent matching intents for request from system
          */
         @Suppress("DEPRECATION")
         fun Context.getActivitiesForIntent(intent: Intent, excludedPackages: List<String>? = null): List<Intent> {
             val activities = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
+                packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(MATCH_DEFAULT_ONLY.toLong()))
             } else {
-                packageManager.queryIntentActivities(intent, 0)
+                packageManager.queryIntentActivities(intent, MATCH_DEFAULT_ONLY)
             }
             return activities.mapNotNull { resolveInfo ->
                 val packageName = resolveInfo.activityInfo.packageName
@@ -64,7 +65,7 @@ class CRUtils {
 
         /**
          * Is external storage available for write
-         * @return - is available
+         * @return is available
          */
         fun isExternalStorageWritable(): Boolean {
             val state = Environment.getExternalStorageState()
@@ -91,10 +92,11 @@ class CRUtils {
                 null
             }
 
-            val iOptions = BitmapFactory.Options()
-            iOptions.inJustDecodeBounds = true
-            iOptions.inSampleSize = calculateInSampleSize(iOptions, width ?: IMAGE_SIZE, height ?: IMAGE_SIZE)
-            iOptions.inJustDecodeBounds = false
+            val iOptions = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+                inSampleSize = calculateInSampleSize(this, width ?: IMAGE_SIZE, height ?: IMAGE_SIZE)
+                inJustDecodeBounds = false
+            }
 
             val original = if (path == null) {
                 context.contentResolver.openInputStream(uri).use { content ->

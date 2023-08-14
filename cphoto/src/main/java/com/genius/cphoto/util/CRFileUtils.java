@@ -232,8 +232,8 @@ public class CRFileUtils {
 
     /**
      * Get Mime type from uri file
-     * @param uri - file uri
-     * @return - Mime type in string
+     * @param uri file uri
+     * @return Mime type in string
      */
     @Nullable
     public static String getMimeType(@NonNull Context context, @NonNull Uri uri) {

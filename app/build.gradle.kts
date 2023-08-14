@@ -37,7 +37,7 @@ android {
 
 val coroutinesVer: String by project
 val verActivity = "1.7.2"
-val varFragment = "1.6.0"
+val varFragment = "1.6.1"
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
@@ -45,9 +45,7 @@ dependencies {
     implementation ("androidx.appcompat:appcompat:1.6.1")
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVer")
-    implementation("androidx.activity:activity:$verActivity")
     implementation("androidx.activity:activity-ktx:$verActivity")
-    implementation("androidx.fragment:fragment:$varFragment")
     implementation("androidx.fragment:fragment-ktx:$varFragment")
     implementation(project(":cphoto"))
     testImplementation ("junit:junit:4.13.2")
